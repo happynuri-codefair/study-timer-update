@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Update manifest.json from APP_VERSION
+      - name: Update manifest.json from APP_VERSION + UPDATE_NOTES
         env:
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
@@ -41,11 +41,13 @@ jobs:
           if not m:
             print("ERROR: APP_VERSION not found in study_timer_latest.html")
             sys.exit(1)
-
           latest = m.group(1).strip()
+
+          n = re.search(r'\bUPDATE_NOTES\b\s*=\s*["\']([^"\']*)["\']', html)
+          notes = n.group(1) if n else ""
+
           owner = os.environ.get("OWNER", "").strip()
           repo = os.environ.get("REPO", "").strip()
-
           default_url = f"https://{owner}.github.io/{repo}/study_timer_latest.html"
 
           data = {}
@@ -53,31 +55,22 @@ jobs:
             with open(manifest_path, "r", encoding="utf-8") as f:
               data = json.load(f)
           except FileNotFoundError:
-            data = {
-              "latest": latest,
-              "url": default_url,
-              "notes": ""
-            }
+            data = {"latest": latest, "url": default_url, "notes": notes}
           except Exception as e:
             print("ERROR: Failed to read manifest.json:", e)
             sys.exit(1)
 
-          # latest는 HTML 기준으로 강제 갱신
           data["latest"] = latest
-
-          # url이 비어있으면 기본값 채움 (기존 url은 최대한 보존)
           if not isinstance(data.get("url"), str) or not data["url"].strip():
             data["url"] = default_url
-
-          # notes가 없으면 빈 문자열
-          if "notes" not in data or data["notes"] is None:
-            data["notes"] = ""
+          data["notes"] = notes
 
           with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.write("\n")
 
           print("Updated manifest.json latest =", latest)
+          print("Updated manifest.json notes  =", notes)
           PY
 
       - name: Commit & push if changed
