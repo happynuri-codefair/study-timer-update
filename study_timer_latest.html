@@ -4,7 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>공부 타이머</title>
-  <style>
+  
+  <!-- ===== Local paste-update loader (runs before app) ===== -->
+  <script>
+  (function(){
+    try{
+      const KEY = 'STUDY_TIMER_OVERRIDE_HTML';
+      const hasNo = new URLSearchParams(location.search).has('nooverride');
+      const override = localStorage.getItem(KEY);
+      if (!hasNo && override && !sessionStorage.getItem('STUDY_TIMER__OVERRIDE_LOADED')){
+        sessionStorage.setItem('STUDY_TIMER__OVERRIDE_LOADED','1');
+        document.open();
+        document.write(override);
+        document.close();
+      }
+    }catch(e){}
+  })();
+  </script>
+<style>
     :root{
       --bg:#f4f6fb;
       --card:#ffffff;
@@ -697,7 +714,29 @@ body.force-mobile .timer{font-size:34px;}
   overflow:hidden !important;
 }
 
-</style>
+
+
+    /* ===== Paste Update Modal ===== */
+    .pasteUpdateModal{position:fixed; inset:0; z-index:99999;}
+    .pasteUpdateBackdrop{position:absolute; inset:0; background:rgba(10,10,20,.35); backdrop-filter:blur(6px);}
+    .pasteUpdateCard{position:relative; width:min(760px, calc(100vw - 24px)); margin:64px auto 0; background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:18px; box-shadow:0 18px 60px rgba(0,0,0,.18); overflow:hidden;}
+    .pasteUpdateHead{display:flex; gap:12px; justify-content:space-between; align-items:flex-start; padding:16px 16px 10px; border-bottom:1px solid var(--line);}
+    .pasteUpdateTitle{font-weight:900; font-size:16px;}
+    .pasteUpdateSub{margin-top:4px; color:var(--muted); font-size:12px; line-height:1.4;}
+    .pasteUpdateClose{width:36px; height:36px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.8); font-size:22px; line-height:1; cursor:pointer;}
+    .pasteUpdateBody{padding:12px 16px 8px;}
+    .pasteUpdateTextarea{width:100%; height:min(46vh, 420px); resize:vertical; border-radius:14px; border:1px solid var(--line); padding:12px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; outline:none; background:rgba(255,255,255,.85);}
+    .pasteUpdateHint{white-space:pre-line; margin-top:8px; font-size:12px; color:var(--muted);}
+    .pasteUpdateFooter{display:flex; justify-content:space-between; gap:10px; align-items:center; padding:12px 16px 16px;}
+    .pasteUpdateRight{display:flex; gap:8px;}
+    .pasteUpdateMsg{padding:10px 16px 16px; color:#b00020; font-weight:800;}
+    @media (max-width:520px){
+      .pasteUpdateFooter{flex-direction:column; align-items:stretch;}
+      .pasteUpdateRight{justify-content:stretch;}
+      .pasteUpdateRight .btn{flex:1;}
+    }
+
+  </style>
 </head>
 <body>
   <div class="banner" id="banner"></div>
@@ -3402,8 +3441,7 @@ renderNoticeList();
 <script>
 // ===== Auto Update (GitHub Pages manifest) =====
 // 버전은 여기만 바꾸면 상단 v표시/업데이트 비교에 같이 반영돼요.
-const APP_VERSION = "6.3.17";
-const UPDATE_NOTES = "알림 삭제 안정화 및 UI 정리";  
+const APP_VERSION = "6.3.16";
 const UPDATE_MANIFEST_URL = "https://happynuri-codefair.github.io/study-timer-update/manifest.json";
 
 (function initUpdateUI() {
@@ -3423,7 +3461,7 @@ const UPDATE_MANIFEST_URL = "https://happynuri-codefair.github.io/study-timer-up
   }
 
   const btn = $("updateBtn");
-  if (btn) btn.addEventListener("click", () => checkForUpdate(false));
+  if (btn) btn.addEventListener("click", () => openPasteUpdateModal());
 
   // 자동 업데이트: 1분마다 확인
   setInterval(() => {
@@ -3473,7 +3511,124 @@ ${notes}` : "");
 " + (e && e.message ? e.message : ""));
   }
 }
+
+
+// ===== Paste-update feature =====
+const PASTE_UPDATE_KEY = 'STUDY_TIMER_OVERRIDE_HTML';
+
+function openPasteUpdateModal(){
+  const m = document.getElementById('pasteUpdateModal');
+  if(!m) return;
+  const ta = document.getElementById('pasteUpdateTextarea');
+  const msg = document.getElementById('pasteUpdateMsg');
+  if(msg){ msg.style.display='none'; msg.textContent=''; }
+  if(ta) ta.value='';
+  m.style.display='block';
+  m.setAttribute('aria-hidden','false');
+  ta?.focus();
+}
+function closePasteUpdateModal(){
+  const m = document.getElementById('pasteUpdateModal');
+  if(!m) return;
+  m.style.display='none';
+  m.setAttribute('aria-hidden','true');
+}
+function showPasteUpdateError(text){
+  const msg = document.getElementById('pasteUpdateMsg');
+  if(!msg) return;
+  msg.textContent = text;
+  msg.style.display='block';
+}
+function applyPastedHtml(raw){
+  const html = (raw||'').trim();
+  if(!html) return showPasteUpdateError('붙여넣은 내용이 비어 있어요.');
+  if(!/<!doctype\s+html/i.test(html) || !/<html[\s>]/i.test(html) || !/<\/html>\s*$/i.test(html)){
+    return showPasteUpdateError('HTML 전체를 붙여넣어야 해요. (<!doctype html> ~ </html> 포함)');
+  }
+  // 간단 안전장치: 너무 짧은 값 방지
+  if(html.length < 2000){
+    return showPasteUpdateError('HTML이 너무 짧아요. 전체를 복사했는지 확인해줘.');
+  }
+  try{
+    localStorage.setItem(PASTE_UPDATE_KEY, html);
+    localStorage.setItem(PASTE_UPDATE_KEY + '_savedAt', String(Date.now()));
+    // 다음 로드 때 오버라이드가 적용되도록
+    sessionStorage.removeItem('STUDY_TIMER__OVERRIDE_LOADED');
+    location.reload();
+  }catch(e){
+    showPasteUpdateError('저장에 실패했어요. (브라우저 저장공간 부족/권한 문제)');
+  }
+}
+function resetPastedUpdate(){
+  try{
+    localStorage.removeItem(PASTE_UPDATE_KEY);
+    localStorage.removeItem(PASTE_UPDATE_KEY + '_savedAt');
+    sessionStorage.removeItem('STUDY_TIMER__OVERRIDE_LOADED');
+    showNotice('업데이트를 초기화했습니다. (기본 버전으로 돌아갑니다.)', 'info');
+    // nooverride로 한 번 로드해서 오버라이드 방지
+    const url = new URL(location.href);
+    url.searchParams.set('nooverride','1');
+    location.href = url.toString();
+  }catch(e){
+    showNotice('초기화에 실패했습니다.', 'error');
+  }
+}
+
+// modal events
+(function bindPasteUpdateUI(){
+  const m = document.getElementById('pasteUpdateModal');
+  if(!m) return;
+  m.querySelector('.pasteUpdateBackdrop')?.addEventListener('click', closePasteUpdateModal);
+  document.getElementById('pasteUpdateClose')?.addEventListener('click', closePasteUpdateModal);
+  document.getElementById('pasteUpdateCancel')?.addEventListener('click', closePasteUpdateModal);
+  document.getElementById('pasteUpdateApply')?.addEventListener('click', () => {
+    const ta = document.getElementById('pasteUpdateTextarea');
+    applyPastedHtml(ta?.value || '');
+  });
+  document.getElementById('pasteUpdateReset')?.addEventListener('click', () => {
+    if(confirm('붙여넣기 업데이트를 초기화하고 기본 버전으로 돌아갈까요?')) resetPastedUpdate();
+  });
+  // ESC to close
+  window.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && m.style.display === 'block') closePasteUpdateModal();
+  });
+})();
+
 </script>
+
+
+  <!-- ===== Paste Update Modal ===== -->
+  <div id="pasteUpdateModal" class="pasteUpdateModal" aria-hidden="true" style="display:none;">
+    <div class="pasteUpdateBackdrop"></div>
+    <div class="pasteUpdateCard" role="dialog" aria-modal="true" aria-labelledby="pasteUpdateTitle">
+      <div class="pasteUpdateHead">
+        <div>
+          <div id="pasteUpdateTitle" class="pasteUpdateTitle">업데이트 (HTML 붙여넣기)</div>
+          <div class="pasteUpdateSub">새 버전 HTML 전체를 붙여넣고 <b>적용</b>을 누르면, 이 기기에서 바로 새 버전으로 실행돼요.</div>
+        </div>
+        <button type="button" class="pasteUpdateClose" id="pasteUpdateClose" aria-label="닫기">×</button>
+      </div>
+
+      <div class="pasteUpdateBody">
+        <textarea id="pasteUpdateTextarea" class="pasteUpdateTextarea" spellcheck="false" placeholder="여기에 새 HTML 전체를 붙여넣기"></textarea>
+        <div class="pasteUpdateHint">
+          • 붙여넣은 HTML은 <b>이 브라우저/기기</b>에 저장됩니다(로컬 저장소).
+
+          • 문제가 생기면 아래 <b>업데이트 초기화</b>로 바로 되돌릴 수 있어요.
+        </div>
+      </div>
+
+      <div class="pasteUpdateFooter">
+        <button type="button" class="btn" id="pasteUpdateReset">업데이트 초기화</button>
+        <div class="pasteUpdateRight">
+          <button type="button" class="btn" id="pasteUpdateCancel">취소</button>
+          <button type="button" class="btn primary" id="pasteUpdateApply">적용</button>
+        </div>
+      </div>
+
+      <div id="pasteUpdateMsg" class="pasteUpdateMsg" style="display:none;"></div>
+    </div>
+  </div>
 
 </body>
 </html>
