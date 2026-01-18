@@ -1,0 +1,95 @@
+name: Auto update manifest.json latest version
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "study_timer_latest.html"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Update manifest.json from APP_VERSION
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          python - <<'PY'
+          import json, re, os, sys
+
+          html_path = "study_timer_latest.html"
+          manifest_path = "manifest.json"
+
+          with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+          m = re.search(r'\bAPP_VERSION\b\s*=\s*["\']([^"\']+)["\']', html)
+          if not m:
+            print("ERROR: APP_VERSION not found in study_timer_latest.html")
+            sys.exit(1)
+
+          latest = m.group(1).strip()
+          owner = os.environ.get("OWNER", "").strip()
+          repo = os.environ.get("REPO", "").strip()
+
+          default_url = f"https://{owner}.github.io/{repo}/study_timer_latest.html"
+
+          data = {}
+          try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+              data = json.load(f)
+          except FileNotFoundError:
+            data = {
+              "latest": latest,
+              "url": default_url,
+              "notes": ""
+            }
+          except Exception as e:
+            print("ERROR: Failed to read manifest.json:", e)
+            sys.exit(1)
+
+          # latest는 HTML 기준으로 강제 갱신
+          data["latest"] = latest
+
+          # url이 비어있으면 기본값 채움 (기존 url은 최대한 보존)
+          if not isinstance(data.get("url"), str) or not data["url"].strip():
+            data["url"] = default_url
+
+          # notes가 없으면 빈 문자열
+          if "notes" not in data or data["notes"] is None:
+            data["notes"] = ""
+
+          with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+
+          print("Updated manifest.json latest =", latest)
+          PY
+
+      - name: Commit & push if changed
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add manifest.json
+          git commit -m "chore: auto bump manifest latest [skip ci]"
+          git push
