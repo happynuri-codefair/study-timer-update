@@ -1,4 +1,4 @@
-name: Auto update manifest.json latest version
+name: Auto update manifest.json from HTML
 
 on:
   push:
@@ -13,76 +13,49 @@ permissions:
 jobs:
   update-manifest:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          persist-credentials: true
 
-      - name: Update manifest.json from APP_VERSION + UPDATE_NOTES
-        env:
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
+      - name: Extract APP_VERSION and UPDATE_NOTES from HTML
         run: |
-          python - <<'PY'
-          import json, re, os, sys
+          python3 - << 'PY'
+          import re, json, pathlib
 
-          html_path = "study_timer_latest.html"
-          manifest_path = "manifest.json"
+          html = pathlib.Path("study_timer_latest.html").read_text(encoding="utf-8", errors="ignore")
 
-          with open(html_path, "r", encoding="utf-8") as f:
-            html = f.read()
+          def find(p):
+            m = re.search(p, html)
+            return m.group(1).strip() if m else ""
 
-          m = re.search(r'\bAPP_VERSION\b\s*=\s*["\']([^"\']+)["\']', html)
-          if not m:
-            print("ERROR: APP_VERSION not found in study_timer_latest.html")
-            sys.exit(1)
-          latest = m.group(1).strip()
+          version = find(r'APP_VERSION\s*=\s*["\']([^"\']+)["\']')
+          notes   = find(r'UPDATE_NOTES\s*=\s*["\']([^"\']+)["\']')
 
-          n = re.search(r'\bUPDATE_NOTES\b\s*=\s*["\']([^"\']*)["\']', html)
-          notes = n.group(1) if n else ""
+          if not version:
+            raise SystemExit("APP_VERSION not found")
 
-          owner = os.environ.get("OWNER", "").strip()
-          repo = os.environ.get("REPO", "").strip()
-          default_url = f"https://{owner}.github.io/{repo}/study_timer_latest.html"
+          manifest = {
+            "latest": version,
+            "url": "https://happynuri-codefair.github.io/study-timer-update/study_timer_latest.html",
+            "notes": notes
+          }
 
-          data = {}
-          try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
-              data = json.load(f)
-          except FileNotFoundError:
-            data = {"latest": latest, "url": default_url, "notes": notes}
-          except Exception as e:
-            print("ERROR: Failed to read manifest.json:", e)
-            sys.exit(1)
-
-          data["latest"] = latest
-          if not isinstance(data.get("url"), str) or not data["url"].strip():
-            data["url"] = default_url
-          data["notes"] = notes
-
-          with open(manifest_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.write("\n")
-
-          print("Updated manifest.json latest =", latest)
-          print("Updated manifest.json notes  =", notes)
+          pathlib.Path("manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2),
+            encoding="utf-8"
+          )
           PY
 
-      - name: Commit & push if changed
+      - name: Commit and push if changed
         run: |
-          if git diff --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add manifest.json
-          git commit -m "chore: auto bump manifest latest [skip ci]"
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "chore: auto update manifest.json"
           git push
