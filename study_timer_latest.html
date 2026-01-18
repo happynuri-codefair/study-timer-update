@@ -1,0 +1,3478 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>공부 타이머</title>
+  <style>
+    :root{
+      --bg:#f4f6fb;
+      --card:#ffffff;
+      --text:#10142a;
+      --muted:#5b647e;
+      --border:#d9e0f2;
+      --accent:#2f67ff;
+      --success:#1aae56;
+      --warning:#d39a00;
+      --danger:#d64545;
+      --shadow: 0 10px 30px rgba(16,20,42,.10);
+      --radius: 16px;
+      --radius2: 22px;
+      --gap: 12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    [data-mode="dark"]{
+      --bg:#0b1020;
+      --card:#121a33;
+      --text:#e9ecf5;
+      --muted:#aab3cf;
+      --border:#263058;
+      --accent:#7aa7ff;
+      --success:#43d17d;
+      --warning:#ffd24a;
+      --danger:#ff6b6b;
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, "Malgun Gothic", sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .app{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px){
+      .app{grid-template-columns:1fr}
+      .side{order:2}
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 10px 14px;
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content: space-between;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 190px;
+    }
+
+    .logo{
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .title{
+      font-weight: 800;
+      letter-spacing: -.2px;
+    }
+
+    .sub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .row.end{justify-content:flex-end}
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 96%, transparent);
+    }
+
+    .now{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight: 700;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: color-mix(in srgb, var(--accent) 90%, var(--text));
+    }
+    .btn.danger{
+      border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+      background: color-mix(in srgb, var(--danger) 12%, transparent);
+      color: color-mix(in srgb, var(--danger) 90%, var(--text));
+    }
+
+    .input, select{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 98%, transparent);
+      color: var(--text);
+      outline:none;
+    }
+    .input:focus, select:focus{border-color: color-mix(in srgb, var(--accent) 55%, var(--border))}
+    .label{font-size: 12px; color: var(--muted); margin-bottom:6px}
+    .grid2{display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap)}
+    .grid3{display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--gap)}
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom:10px;
+    }
+    .section-title h2{margin:0; font-size: 16px; letter-spacing:-.2px}
+    .hint{font-size: 12px; color: var(--muted)}
+
+    .timer{
+      font-family: var(--mono);
+      font-weight: 900;
+      font-size: 44px;
+      letter-spacing: -1px;
+      text-align:center;
+      padding: 10px 0;
+    }
+
+    .tabs{display:flex; gap:8px; padding: 6px; border-radius: 999px; border:1px solid var(--border); background: color-mix(in srgb, var(--card) 95%, transparent)}
+    .tab{flex:1; text-align:center; padding:10px 12px; border-radius: 999px; cursor:pointer; font-weight: 800; color: var(--muted); user-select:none}
+    .tab.active{background: color-mix(in srgb, var(--accent) 16%, transparent); color: color-mix(in srgb, var(--accent) 92%, var(--text)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border))}
+
+    /* Switch */
+    .switch{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .switch input{display:none}
+    .track{
+      width: 52px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 90%, transparent);
+      position: relative;
+      cursor:pointer;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .thumb{
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      position:absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform .2s ease;
+      box-shadow: 0 6px 14px rgba(0,0,0,.12);
+    }
+    .switch input:checked + .track{
+      background: color-mix(in srgb, var(--accent) 25%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    }
+    .switch input:checked + .track .thumb{transform: translateX(22px)}
+
+    /* Countdown badge */
+    .countwrap{display:flex; align-items:center; gap:10px}
+    .countbadge{
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: visible;
+    }
+    .countbadge .ring{
+      width: 34px;
+      height: 34px;
+      display:block;
+      transform: rotate(-90deg);
+    }
+    .countbadge .ring-bg{
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 4;
+      opacity: .7;
+    }
+    .countbadge .ring-fg{
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 40 224; /* 2*pi*16 */
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset .2s linear;
+    }
+    .countbadge .ring-num{
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-family: var(--mono);
+      color: var(--text);
+      font-size: 13px;
+      background: rgba(255,255,255,.88);
+      background: color-mix(in srgb, var(--card) 90%, transparent);
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .spin{animation: spin .6s ease-in-out 1}
+    @keyframes spin{from{transform: rotate(0)}to{transform: rotate(360deg)}}
+
+    /* Banner */
+    .banner{
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(900px, calc(100% - 18px));
+      z-index: 200;
+      pointer-events:none;
+    }
+    .banner .msg{
+      pointer-events:auto;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content: space-between;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      animation: drop .22s ease-out;
+    }
+    @keyframes drop{from{transform: translateY(-10px); opacity:.0}to{transform: translateY(0); opacity:1}}
+    .banner .text{font-size: 14px; line-height:1.35}
+    .banner .text b{color: var(--text)}
+    .banner .actions{display:flex; gap:8px; flex-shrink:0}
+
+    .kpi{display:flex; gap:10px; flex-wrap:wrap}
+    .k{padding:10px 12px; border-radius: 14px; border:1px solid var(--border); background: color-mix(in srgb, var(--card) 94%, transparent)}
+    .k .t{font-size: 12px; color: var(--muted)}
+    .k .v{font-family: var(--mono); font-weight: 900; margin-top:4px}
+
+    /* Side calendar */
+    .sideheader{display:flex; justify-content:space-between; align-items:center; gap:10px}
+    .side.collapsed{display:none}
+    .cal{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .dow{font-size: 11px; color: var(--muted); text-align:center}
+    .day{
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      border-radius: 14px;
+      padding: 10px 0;
+      text-align:center;
+      cursor:pointer;
+      position: relative;
+      user-select:none;
+    }
+    .day.muted{opacity:.45}
+    .day.today{border-color: color-mix(in srgb, var(--accent) 45%, var(--border))}
+    .dot{
+      position:absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      display:flex;
+      gap:6px;
+    }
+    .dot i{display:block; width:7px; height:7px; border-radius: 999px}
+    .dot .g{background: var(--success)}
+    .dot .y{background: var(--warning)}
+
+    /* Lists */
+    .list{display:flex; flex-direction:column; gap:10px}
+    .item{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      background: color-mix(in srgb, var(--card) 96%, transparent);
+      display:flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items:flex-start;
+    }
+    .item .meta{min-width:0}
+    .item .meta .name{font-weight: 900; letter-spacing:-.2px}
+    .item .meta .sub{margin-top:4px; font-size: 12px; color: var(--muted)}
+    .item .right{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+
+    /* Modal */
+    .modalback{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 300;
+      padding: 12px;
+    }
+    .modal{
+      width: min(920px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      max-height: 88vh;
+      overflow:auto;
+    }
+    .modal h3{margin:0 0 10px 0; letter-spacing:-.2px}
+    .modal .close{float:right}
+    .divider{height:1px; background: var(--border); margin: 12px 0}
+
+    /* small */
+    .small{font-size:12px; color:var(--muted)}
+
+    /* Color chips */
+    .chips{display:flex; gap:8px; flex-wrap:wrap}
+    .chip{display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius: 999px; border:1px solid var(--border); background: color-mix(in srgb, var(--card) 95%, transparent); cursor:pointer}
+    .sw{width:14px; height:14px; border-radius: 4px; border:1px solid var(--border)}
+
+    .dangerText{color: var(--danger); font-weight: 800}
+
+    /* hide */
+    .hide{display:none !important}
+  
+/* ===== Compact layout patch (v5.2) ===== */
+header{padding:12px 14px !important;}
+header .sub{display:none !important;}
+.wrap{padding:12px !important;}
+.card{padding:14px !important;}
+.grid2{gap:10px !important;}
+/* Make switches smaller */
+.switch{transform: scale(.9); transform-origin:left center;}
+/* Calendar split: make calendar narrower by default */
+.split{grid-template-columns: 1.2fr .8fr !important;}
+/* Provide calendar toggle button always visible */
+
+
+.split.collapsed{grid-template-columns:1fr 0fr !important;}
+.split.collapsed .side{display:none !important;}
+
+/* ===== Responsive layout + PC/Mobile toggle (v6.1) ===== */
+body.force-mobile .split{grid-template-columns:1fr !important;}
+body.force-mobile .side{order:2;}
+body.force-mobile .maincol{order:1;}
+body.force-mobile .topbar{flex-wrap:wrap;}
+body.force-mobile .topbar .row.end{flex-wrap:wrap; gap:10px;}
+body.force-mobile .topbar .pill{width:auto;}
+body.force-mobile .tabs{gap:8px;}
+body.force-mobile .grid2{grid-template-columns:1fr !important;}
+body.force-mobile .grid3{grid-template-columns:1fr 1fr 1fr !important;}
+body.force-mobile .btn{padding:12px 14px;}
+body.force-mobile input.input, body.force-mobile select{padding:12px 12px;}
+body.force-mobile .timer{font-size:34px;}
+/* Auto mobile on small screens unless forced desktop */
+@media (max-width: 900px){
+  body:not(.force-desktop) .split{grid-template-columns:1fr !important;}
+  body:not(.force-desktop) .side{order:2;}
+  body:not(.force-desktop) .topbar{flex-wrap:wrap;}
+  body:not(.force-desktop) .topbar .row.end{flex-wrap:wrap; gap:10px;}
+  body:not(.force-desktop) .grid2{grid-template-columns:1fr !important;}
+  body:not(.force-desktop) .btn{padding:12px 14px;}
+  body:not(.force-desktop) input.input, body:not(.force-desktop) select{padding:12px 12px;}
+}
+
+
+/* ===== Color wheel modal (v6.1.1) ===== */
+.modal{position:fixed;inset:0;display:none;z-index:60}
+.modal[aria-hidden="false"]{display:block}
+.modal .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.modal .dialog{position:relative;max-width:860px;margin:6vh auto 0;background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.25);padding:14px}
+@media (max-width:900px){.modal .dialog{margin:4vh 12px 0}}
+.dlgHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px 6px 10px}
+.dlgTitle{font-weight:900;font-size:16px}
+.dlgSub{color:var(--muted);font-size:13px;margin-top:4px}
+.dlgBody{padding:6px}
+.colorGrid{display:grid;grid-template-columns: 320px 1fr;gap:14px;align-items:start}
+@media (max-width:900px){.colorGrid{grid-template-columns:1fr}}
+.wheelWrap{position:relative;width:260px;height:260px;margin:6px auto}
+#wheelKnob,.wheelKnob{position:absolute;width:16px;height:16px;border-radius:999px;border:2px solid #fff;box-shadow:0 8px 18px rgba(0,0,0,.22);transform:translate(-50%,-50%);left:130px;top:130px;pointer-events:none}
+#cwCanvas{border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.10);touch-action:none}
+.brightWrap{display:flex;flex-direction:column;gap:10px}
+.brightLabel{font-weight:800}
+.brightTrack{position:relative;height:260px;width:64px;margin:0 auto}
+.brightTrack input[type="range"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.brightBar{position:absolute;inset:6px 22px;border-radius:999px;border:1px solid var(--border);background:linear-gradient(to top, #000, var(--accent))}
+.brightKnob{position:absolute;left:50%;width:22px;height:22px;border-radius:999px;background:var(--card);border:2px solid var(--accent);box-shadow:0 10px 22px rgba(0,0,0,.18);transform:translate(-50%,-50%);top:6px}
+.preview{border:1px solid var(--border);border-radius:16px;padding:12px}
+.swatch{height:46px;border-radius:14px;border:1px solid var(--border);background:var(--accent)}
+.hexRow{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:10px}
+.mono{font-family:var(--mono)}
+.dlgActions{display:flex;justify-content:flex-end}
+
+
+/* ===== Toast (v6.1.1) ===== */
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:rgba(20,24,32,.92);color:#fff;
+  padding:10px 14px;border-radius:999px;box-shadow:0 10px 28px rgba(0,0,0,.22);font-weight:700;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease;z-index:80}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+
+/* ===== Notice bar (v6.1.7) ===== */
+.noticeBar{flex:1;min-width:260px;max-width:760px;margin:0 14px;position:relative}
+.noticeMain{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border:1px solid var(--border);background:var(--card);border-radius:18px;padding:10px 12px;
+  box-shadow:0 8px 22px rgba(0,0,0,.06)}
+.noticeText{font-weight:800;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  color:var(--text);flex:1;min-width:0}
+.noticeMeta{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.noticeTime{font-size:12px;color:var(--muted);font-weight:800;white-space:nowrap}
+.noticeDropBtn,.noticeDelBtn{width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.noticeDelBtn{font-size:16px}
+.noticePanel{position:absolute;top:54px;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.18);padding:10px;display:none;z-index:70}
+.noticePanel[aria-hidden="false"]{display:block}
+.panelHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 6px 10px}
+.panelTitle{font-weight:900}
+.panelControls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill.mini{padding:6px 10px;border-radius:999px}
+.noticeList{max-height:260px;overflow:auto;padding:0 4px}
+.noticeItem{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--border);border-radius:16px;padding:10px 10px;margin-bottom:8px}
+.noticeItem input[type="checkbox"]{margin-top:4px;transform:scale(1.1)}
+.noticeItemBody{flex:1;min-width:0}
+.noticeItemText{font-weight:800;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.noticeItemTime{font-size:12px;color:var(--muted);font-weight:800;margin-top:6px}
+.panelFoot{padding:6px 6px 2px;color:var(--muted);font-size:12px}
+@media (max-width: 900px){
+  .noticeBar{order:3;max-width:100%;margin:10px 0 0}
+  .noticePanel{top:58px}
+}
+
+
+/* ===== Notice edge lighting (v6.1.8) ===== */
+.noticeBar{position:relative}
+.noticeEdge{position:absolute;left:-2px;right:-2px;top:-2px;height:4px;border-radius:999px;opacity:0;pointer-events:none;
+  background:linear-gradient(90deg, rgba(255,0,128,.0), rgba(255,0,128,.9), rgba(0,180,255,.9), rgba(110,255,0,.9), rgba(255,0,128,.0));
+  filter:blur(.2px)}
+.noticeEdge.on{opacity:1; animation:edgePulse .9s ease-in-out infinite;}
+@keyframes edgePulse{0%{transform:scaleX(.98);opacity:.85}50%{transform:scaleX(1);opacity:1}100%{transform:scaleX(.98);opacity:.85}}
+.noticeMeta .noticeTime{min-width:64px}
+
+
+/* v6.2.5: 상단 배너 박스 숨김 */
+#banner{display:none!important}
+
+/* v6.3.1: 알림 UX - 최신 알림 유지 + edge 1바퀴 + 상단 5초 라인 */
+.noticeProgress{
+  pointer-events:none;
+  position:absolute;
+  left:14px; right:14px;
+  top:8px;
+  height:3px;
+  border-radius:999px;
+  overflow:hidden;
+  opacity:0;
+}
+.noticeProgress > span{
+  display:block; width:100%; height:100%;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(1);
+}
+.noticeEdge.on ~ .noticeProgress{ opacity:1; }
+.noticeEdge.on ~ .noticeProgress > span{ animation: noticeTopShrink 5s linear 1; }
+@keyframes noticeTopShrink{ from{transform:scaleX(1)} to{transform:scaleX(0)} }
+
+/* edge lighting: 테두리 1바퀴 */
+#noticeEdge{
+  pointer-events:none;
+  position:absolute;
+  inset:-2px;
+  border-radius:18px;
+  opacity:0;
+}
+#noticeEdge::before{
+  content:"";
+  position:absolute; inset:0;
+  border-radius:18px;
+  padding:2px;
+  background: conic-gradient(from 0deg, var(--accent) 0 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity:1;
+  transform: rotate(0turn);
+}
+#noticeEdge.on{ opacity:1; }
+#noticeEdge.on::before{ animation: noticeRingSpin 5s linear 1; }
+@keyframes noticeRingSpin{ from{transform:rotate(0turn)} to{transform:rotate(1turn)} }
+
+/* 알림 선택 체크박스를 '원형'으로 */
+.noticeItem{ gap:10px; }
+.noticePick{
+  -webkit-appearance:none; appearance:none;
+  width:18px; height:18px; border-radius:999px;
+  border:2px solid var(--accent);
+  display:inline-grid; place-items:center;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+.noticePick::after{
+  content:"";
+  width:10px; height:10px; border-radius:999px;
+  background: var(--accent);
+  opacity:0;
+  transform: scale(0.6);
+  transition: 120ms;
+}
+.noticePick:checked::after{ opacity:1; transform: scale(1); }
+
+
+/* v6.3.2: 알림 효과 재구현(무지개 제거) - 테마색 단색 테두리 1바퀴 + 상단 5초 라인 */
+#noticeEdge, #noticeEdge::before{ background:none !important; }
+#noticeEdge{ display:none !important; } /* 이전 edge 구현 완전 비활성 */
+
+.noticeBar{ position:relative; overflow:visible; }
+
+.noticeStrokeSvg{
+  pointer-events:none;
+  position:absolute;
+  inset:-2px;
+  width:calc(100% + 4px);
+  height:calc(100% + 4px);
+  opacity:0;
+}
+.noticeStrokeSvg rect{
+  fill:none;
+  stroke: var(--accent);
+  stroke-width:3;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  /* '움직이는 선' 느낌: 짧은 대시 + 큰 공백 */
+  stroke-dasharray: 40 224;
+  stroke-dashoffset: 0;
+}
+.noticeStrokeSvg.ringOn{ opacity:1; }
+.noticeStrokeSvg.ringOn rect{
+  animation: noticeStrokeLoop 0.7s linear 1;
+}
+@keyframes noticeStrokeLoop{
+  from{ stroke-dashoffset: 0; }
+  to{ stroke-dashoffset: -264; }
+}
+  to{ stroke-dashoffset: -292; }
+}
+
+/* 상단 진행선(오른쪽 -> 왼쪽으로 줄어듦) */
+.noticeProgress{
+  pointer-events:none;
+  position:absolute;
+  left:14px; right:14px;
+  top:8px;
+  height:3px;
+  border-radius:999px;
+  overflow:hidden;
+  opacity:0;
+}
+.noticeProgress > span{
+  display:block;
+  width:100%;
+  height:100%;
+  background: var(--accent);
+  transform-origin: left center;
+  transform:scaleX(1);
+}
+.noticeProgress.progressOn{ opacity:1; }
+.noticeProgress.progressOn > span{
+  animation: noticeTopShrink 5s linear 1;
+}
+@keyframes noticeTopShrink{ from{transform:scaleX(1)} to{transform:scaleX(0)} }
+
+
+/* v6.3.5: 회전 제거 -> 테두리 전체 블러 글로우(연한 테마색) */
+.noticeBar{ position:relative; }
+.noticeGlow{
+  pointer-events:none;
+  position:absolute;
+  inset:-6px;
+  border-radius:22px;
+  opacity:0;
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0),
+    0 0 20px rgba(0,0,0,0);
+  transition: opacity 180ms ease;
+}
+.noticeGlow.glowOn{
+  opacity:1;
+  animation: noticeGlowPulse 800ms ease-out 1;
+}
+@keyframes noticeGlowPulse{
+  0%   { opacity:0.0; }
+  18%  { opacity:1.0; }
+  100% { opacity:0.0; }
+}
+
+
+/* v6.3.6: 알림 텍스트 줄바꿈 강제 */
+#noticeText, .noticeMainText, .noticeTitleText{ white-space: pre-line !important; }
+
+
+/* v6.3.6: NaN 시간 숨김 */
+.noticeTime.hiddenTime{ display:none !important; }
+
+
+/* v6.3.7: 글로우는 즉시 켜지고 5초 유지(깜빡임 최소화) */
+.noticeGlow{ transition: opacity 120ms ease; }
+.noticeGlow.glowHold{ opacity:1 !important; }
+
+/* v6.3.7: NaN 시간 숨김 */
+.noticeTime.hiddenTime{ display:none !important; }
+
+
+/* v6.3.8: 알림 2문장 줄바꿈 표시 + 2줄 클램프 */
+#noticeText{
+  display:block !important;
+  white-space:pre-line !important;
+  line-height:1.25 !important;
+  max-height:2.5em !important; /* 2 lines */
+  overflow:hidden !important;
+}
+
+</style>
+</head>
+<body>
+  <div class="banner" id="banner"></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">ST</div>
+      <div>
+        <div class="title">공부 타이머</div>
+        <div class="sub">기록 · 예약 · 통계 · 페이지/문제 측정</div>
+      </div>
+    </div>
+
+    <div class="row end">
+      
+    
+    
+      <span id="verLabel" class="small" style="font-weight:900;">v6.3.16</span>
+      <button class="btn" id="updateBtn" type="button">업데이트</button>
+      <div class="pill">
+        <span class="hint">자동</span>
+        <label class="switch">
+          <input type="checkbox" id="autoUpdateToggle" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+<!-- ===== Notice bar (v6.1.8) ===== -->
+    <div class="noticeBar" id="noticeBar" aria-label="알림">
+      <div class="noticeEdge" id="noticeEdge" aria-hidden="true"></div>
+      <div class="noticeProgress" id="noticeProgress" aria-hidden="true"><span></span></div>
+      <div class="noticeGlow" id="noticeGlow" aria-hidden="true"></div>
+      <svg id="noticeStrokeSvg" class="noticeStrokeSvg" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="2" y="2" width="96" height="36" rx="10" ry="10" />
+      </svg>
+
+      <div class="noticeMain" id="noticeMain">
+        <div class="noticeText" id="noticeText">알림은 여기서 표시됩니다.</div>
+
+        <div class="noticeMeta" id="noticeMeta" style="display:none">
+          <span class="noticeTime" id="noticeTime"></span>
+          <button class="btn ghost sm noticeDelBtn" id="noticeDelBtn" title="현재 알림 삭제">✕</button>
+          <button class="btn ghost sm noticeDropBtn" id="noticeDropBtn" title="이전 알림 보기">▾</button>
+        </div>
+      </div>
+
+      <div class="noticePanel" id="noticePanel" aria-hidden="true">
+        <div class="panelHead">
+          <div class="panelTitle">알림 목록</div>
+          <div class="panelControls">
+            <div class="pill mini">
+              <span class="hint">자동 지우기</span>
+              <label class="switch" style="margin-left:6px">
+                <input id="noticeAutoClear" type="checkbox" />
+                <span class="track"><span class="thumb"></span></span>
+              </label>
+            </div>
+            <button class="btn ghost sm" id="noticeClearBtn">지우기</button>
+          </div>
+        </div>
+        <div class="noticeList" id="noticeList"></div>
+        <div class="panelFoot">자동 지우기를 켜시면 3분이 지난 알림는 자동으로 삭제됩니다.</div>
+      </div>
+    </div>
+
+
+<div class="pill">
+        <span class="hint">현재 시각</span>
+        <span class="now" id="nowClock">-</span>
+      </div>
+
+      <div class="pill" title="라이트/다크 테마를 전환합니다.">
+        <span class="hint">테마</span>
+        <label class="switch">
+          <input id="modeToggle" type="checkbox" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+        <span class="hint" id="modeLabel">Light</span>
+      </div>
+
+      
+
+      <div class="pill" title="PC/모바일 화면 배치를 전환합니다.">
+        <span class="hint">화면</span>
+        <label class="switch" style="margin-left:6px">
+          <input id="layoutToggle" type="checkbox" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+        <span class="hint" id="layoutLabel">PC</span>
+      </div>
+<div class="pill" title="색상 테마(팔레트)를 선택하고 관리합니다.">
+        <span class="hint">색상</span>
+        <select id="paletteSelect" style="min-width:170px"></select>
+
+      <div class="pill">
+        <span class="hint">색상</span>
+        <button class="btn ghost sm" id="openColorWheelBtn" title="원판으로 색상을 선택합니다.">원판</button>
+      </div>
+        <button class="btn" id="paletteManageBtn">추가/변경</button>
+      </div>
+
+      <button class="btn danger" id="exitBtn">종료</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <main class="main">
+      <div class="card">
+        <div class="section-title">
+          <h2>타이머</h2>
+          <div class="row">
+            <div class="countwrap">
+              <span class="hint">라이브 저장</span>
+              <label class="switch">
+                <input id="liveSaveToggle" type="checkbox" checked />
+                <span class="track"><span class="thumb"></span></span>
+              </label>
+              <div class="countbadge" id="liveBadge" title="5초마다 저장합니다.">
+                <svg class="ring" viewBox="0 0 40 40" aria-hidden="true">
+                  <circle class="ring-bg" cx="20" cy="20" r="16"></circle>
+                  <circle class="ring-fg" cx="20" cy="20" r="16"></circle>
+                </svg>
+                <span class="ring-num" id="liveNum">5</span>
+              </div>
+            </div>
+
+            
+            <button class="btn" id="manualSaveBtn">수동 저장</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="label">제목</div>
+            <input class="input" id="titleInput" placeholder="예: [수학] 이차함수" />
+          </div>
+          <div>
+            <div class="label">문제집 선택</div>
+            <div class="row" style="gap:8px">
+              <select id="workbookSelect" style="flex:1"></select>
+              <button class="btn" id="workbookManageBtn">등록/관리</button>
+            </div>
+            <div class="small" id="workbookHint">문제집을 선택하시면 페이지/문제 입력 검증에 사용됩니다.</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="tabs" role="tablist">
+          <div class="tab active" id="tabStopwatch">스톱워치</div>
+          <div class="tab" id="tabTimer">타이머</div>
+        </div>
+
+        <div class="timer" id="timeDisplay">00:00:00.00</div>
+
+        <div class="grid3" id="timerInputs">
+          <div>
+            <div class="label">시간</div>
+            <input class="input" id="inH" inputmode="numeric" placeholder="0" />
+          </div>
+          <div>
+            <div class="label">분</div>
+            <input class="input" id="inM" inputmode="numeric" placeholder="0" />
+          </div>
+          <div>
+            <div class="label">초</div>
+            <input class="input" id="inS" inputmode="numeric" placeholder="0" />
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="grid2">
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">페이지 측정</div>
+              <div class="small">시작/끝 페이지로 분당 페이지를 계산합니다.</div>
+            </div>
+            <label class="switch">
+              <input id="pageToggle" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </label>
+          </div>
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">문제수 측정</div>
+              <div class="small">시작/끝 문제번호 또는 직접 입력을 사용합니다.</div>
+            </div>
+            <label class="switch">
+              <input id="probToggle" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="grid2" id="pageArea" class="hide">
+          <div>
+            <div class="label">시작 페이지</div>
+            <input class="input" id="pageStart" inputmode="numeric" placeholder="예: 12" />
+          </div>
+          <div>
+            <div class="label">끝 페이지</div>
+            <input class="input" id="pageEnd" inputmode="numeric" placeholder="예: 20" />
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div id="probArea" class="hide">
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">문제 입력 방식</div>
+              <div class="small">기본은 시작/끝 문제번호 방식입니다.</div>
+            </div>
+            <div class="row">
+              <label class="pill" style="cursor:pointer">
+                <input type="radio" name="probMode" value="range" checked />
+                <span class="small">시작/끝</span>
+              </label>
+              <label class="pill" style="cursor:pointer">
+                <input type="radio" name="probMode" value="manual" />
+                <span class="small">직접 입력</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="grid3" id="probRangeRow">
+            <div>
+              <div class="label">시작 문제번호</div>
+              <input class="input" id="probStart" inputmode="numeric" placeholder="예: 1" />
+            </div>
+            <div>
+              <div class="label">끝 문제번호</div>
+              <input class="input" id="probEnd" inputmode="numeric" placeholder="예: 20" />
+            </div>
+            <div>
+              <div class="label">푼 문제수(자동)</div>
+              <input class="input" id="probSolvedAuto" disabled placeholder="-" />
+            </div>
+          </div>
+
+          <div class="grid2 hide" id="probManualRow">
+            <div>
+              <div class="label">푼 문제수(직접)</div>
+              <input class="input" id="probSolvedManual" inputmode="numeric" placeholder="예: 30" />
+            </div>
+            <div>
+              <div class="label">(참고) 시작/끝은 비활성화됩니다.</div>
+              <div class="pill"><span class="small">직접 입력 모드에서는 푼 문제수를 직접 입력해 주세요.</span></div>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">정답/오답 입력</div>
+              <div class="small">필요하시면 입력하시고, 건너뛰실 수도 있습니다.</div>
+            </div>
+            <label class="switch" title="정답/오답 입력을 건너뜁니다.">
+              <input id="skipCwToggle" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </label>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="grid2" id="cwRow">
+            <div>
+              <div class="label">정답 개수</div>
+              <input class="input" id="correctCnt" inputmode="numeric" placeholder="예: 25" />
+            </div>
+            <div>
+              <div class="label">오답 개수</div>
+              <input class="input" id="wrongCnt" inputmode="numeric" placeholder="예: 5" />
+            </div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="row" style="justify-content:center">
+          <button class="btn primary" id="startBtn">시작</button>
+          <button class="btn" id="pauseBtn">일시정지</button>
+          <button class="btn" id="resumeBtn">재개</button>
+          <button class="btn primary" id="stopBtn">종료</button>
+          <button class="btn" id="resetBtn">초기화</button>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="kpi">
+          <div class="k"><div class="t">오늘 누적</div><div class="v" id="todayTotal">00:00:00</div></div>
+          <div class="k"><div class="t">이번 세션 시작</div><div class="v" id="sessionStart">-</div></div>
+          <div class="k"><div class="t">이번 세션 종료</div><div class="v" id="sessionEnd">-</div></div>
+        </div>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>기록</h2>
+          <div class="row">
+            <button class="btn" id="clearTodayBtn">오늘 기록만 초기화</button>
+            <button class="btn danger" id="clearAllBtn">전체 초기화</button>
+          </div>
+        </div>
+        <div class="small">기록 목록에서 <b>상세보기</b>를 누르시면 시작/종료 시각(초 단위)과 측정 결과를 자세히 확인하실 수 있습니다.</div>
+        <div style="height:10px"></div>
+        <div class="list" id="recordList"></div>
+      </div>
+    </main>
+
+    <aside class="side" id="side">
+      <div class="card">
+        <div class="sideheader">
+          <div>
+            <div style="font-weight:900">캘린더</div>
+            <div class="small">기록(초록) / 예약(노랑)</div>
+          </div>
+          <button class="btn" id="collapseCalBtn">접기</button>
+        </div>
+        <div class="row" style="justify-content:space-between; margin-top:10px">
+          <button class="btn" id="prevMonth">이전</button>
+          <div style="font-weight:900" id="monthLabel">-</div>
+          <button class="btn" id="nextMonth">다음</button>
+        </div>
+        <div class="cal" id="calGrid"></div>
+        <div class="divider"></div>
+        <div class="section-title"><h2 style="font-size:14px">선택한 날짜</h2><span class="hint" id="selectedDate">-</span></div>
+        <div class="list" id="dayRecords"></div>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>통계</h2>
+          <div class="row">
+            <button class="btn" data-stat="day">일간</button>
+            <button class="btn" data-stat="week">주간</button>
+            <button class="btn" data-stat="month">월간</button>
+            <button class="btn" data-stat="year">연간</button>
+          </div>
+        </div>
+        <div class="kpi" id="statsKpi"></div>
+        <div style="height:8px"></div>
+        <div class="small" id="statsHint">원하시는 기간 버튼을 눌러 통계를 확인해 주세요.</div>
+      </div>
+    </aside>
+
+    <aside class="side side-collapsed card hide" id="sideCollapsed">
+      <div class="sideheader">
+        <div>
+          <div style="font-weight:900">캘린더</div>
+          <div class="small">접힌 상태입니다.</div>
+        </div>
+        <button class="btn" id="expandCalBtn">펼치기</button>
+      </div>
+      <div class="small" style="margin-top:8px">캘린더를 펼치시면 기록/예약 표시를 확인하실 수 있습니다.</div>
+    </aside>
+
+  </div>
+
+  <!-- Modal: Record detail -->
+  <div class="modalback" id="detailBack">
+    <div class="modal">
+      <button class="btn close" id="detailClose">닫기</button>
+      <h3>기록 상세보기</h3>
+      <div id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Workbook manage -->
+  <div class="modalback" id="wbBack">
+    <div class="modal">
+      <button class="btn close" id="wbClose">닫기</button>
+      <h3>문제집 등록/관리</h3>
+      <div class="small">문제집을 등록하시면 페이지/문제 입력값을 검증하고 통계에 활용할 수 있습니다.</div>
+      <div class="divider"></div>
+      <div class="grid3">
+        <div>
+          <div class="label">문제집 제목</div>
+          <input class="input" id="wbTitle" placeholder="예: 개념원리 수학" />
+        </div>
+        <div>
+          <div class="label">전체 문제수</div>
+          <input class="input" id="wbTotalProblems" inputmode="numeric" placeholder="예: 500" />
+        </div>
+        <div>
+          <div class="label">전체 페이지수</div>
+          <input class="input" id="wbTotalPages" inputmode="numeric" placeholder="예: 320" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <button class="btn primary" id="wbAddBtn">추가</button>
+        <button class="btn" id="wbUpdateBtn">선택 항목 변경</button>
+        <button class="btn danger" id="wbDeleteBtn">선택 항목 삭제</button>
+      </div>
+      <div class="divider"></div>
+      <div class="label">등록된 문제집</div>
+      <select id="wbList" size="8" class="input"></select>
+      <div class="small" style="margin-top:8px">항목을 선택하신 뒤 변경/삭제를 진행해 주세요.</div>
+    </div>
+  </div>
+
+  <!-- Modal: Palette manage -->
+  <div class="modalback" id="palBack">
+    <div class="modal">
+      <button class="btn close" id="palClose">닫기</button>
+      <h3>색상 테마(팔레트) 추가/변경/삭제</h3>
+      <div class="small">원하시는 색으로 바꾸실 수 있습니다. 선택 후 변경하거나 새로 추가하실 수 있습니다.</div>
+      <div class="divider"></div>
+
+      <div class="label">팔레트 선택</div>
+      <select id="palList" size="6" class="input"></select>
+      <div style="height:10px"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="label">팔레트 이름</div>
+          <input class="input" id="palName" placeholder="예: 블루 라이트" />
+        </div>
+        <div>
+          <div class="label">강조색(Accent)</div>
+          <input class="input" id="palAccent" type="color" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid3">
+        <div>
+          <div class="label">배경</div>
+          <input class="input" id="palBg" type="color" />
+        </div>
+        <div>
+          <div class="label">카드</div>
+          <input class="input" id="palCard" type="color" />
+        </div>
+        <div>
+          <div class="label">글자</div>
+          <input class="input" id="palText" type="color" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid3">
+        <div>
+          <div class="label">보조 글자</div>
+          <input class="input" id="palMuted" type="color" />
+        </div>
+        <div>
+          <div class="label">테두리</div>
+          <input class="input" id="palBorder" type="color" />
+        </div>
+        <div>
+          <div class="label">성공(초록)</div>
+          <input class="input" id="palSuccess" type="color" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid2">
+        <div>
+          <div class="label">경고(노랑)</div>
+          <input class="input" id="palWarning" type="color" />
+        </div>
+        <div>
+          <div class="label">위험(빨강)</div>
+          <input class="input" id="palDanger" type="color" />
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="row">
+        <button class="btn primary" id="palAddBtn">새로 추가</button>
+        <button class="btn" id="palUpdateBtn">선택 항목 변경</button>
+        <button class="btn danger" id="palDeleteBtn">선택 항목 삭제</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="small">※ 테마(라이트/다크)는 상단 스위치로 전환되며, 팔레트는 색상(Accent/배경 등)을 관리합니다.</div>
+    </div>
+  </div>
+
+  <!-- Modal: In-app message -->
+  <div class="modalback" id="msgBack">
+    <div class="modal" style="width:min(560px,100%)">
+      <button class="btn close" id="msgClose">닫기</button>
+      <h3 id="msgTitle">안내</h3>
+      <div id="msgBody" class="text"></div>
+      <div style="height:12px"></div>
+      <div class="row end">
+        <button class="btn primary" id="msgOk">확인</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const LS = {
+    MODE: 'st_mode',
+    PALETTE_ID: 'st_palette_id',
+    PALETTES: 'st_palettes',
+    WORKBOOKS: 'st_workbooks',
+    RECORDS: 'st_records',
+    RESV: 'st_reservations',
+    UI: 'st_ui',
+    RUNSTATE: 'st_runstate',
+    AUTO_SAVE: 'st_auto_save',
+    LIVE_SAVE: 'st_live_save'
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const banner = $('banner');
+
+  function showBanner(message, type='info', actions=[]){
+    // v6.2.5: 모든 알림을 알림바/알림목록으로만 표시합니다.
+    try{
+      if(typeof pushNotice === 'function') pushNotice(String(message));
+    }catch(e){}
+  }
+
+  function showModalMessage(title, bodyHtml){
+    $('msgTitle').textContent = title;
+    $('msgBody').innerHTML = bodyHtml;
+    $('msgBack').style.display = 'flex';
+  }
+  function closeModalMessage(){ $('msgBack').style.display='none'; }
+  $('msgClose').onclick = closeModalMessage;
+  $('msgOk').onclick = closeModalMessage;
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"]+/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]||m));
+  }
+
+  function pad2(n){ n = Math.floor(Math.abs(n)); return (n<10?'0':'')+n; }
+  function pad3(n){ n = Math.floor(Math.abs(n)); if(n<10) return '00'+n; if(n<100) return '0'+n; return ''+n; }
+
+  function msToHMS(ms, withMs=false){
+    // withMs=true: show centiseconds (2 digits) rounded
+    ms = Math.max(0, Number(ms) || 0);
+    if(withMs){
+      const totalCs = Math.max(0, Math.round(ms/10)); // 10ms unit
+      const h = Math.floor(totalCs/360000);
+      const m = Math.floor((totalCs%360000)/6000);
+      const s = Math.floor((totalCs%6000)/100);
+      const cs = totalCs%100;
+      return `${pad2(h)}:${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
+    }
+    ms = Math.max(0, Math.floor(ms));
+    const h = Math.floor(ms/3600000);
+    const m = Math.floor((ms%3600000)/60000);
+    const s = Math.floor((ms%60000)/1000);
+    return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  }
+
+  function fmt12(d, withSec=true){
+    const hh = d.getHours();
+    const am = hh < 12;
+    const h12 = (hh % 12) === 0 ? 12 : (hh % 12);
+    const mm = d.getMinutes();
+    const ss = d.getSeconds();
+    return `${am?'오전':'오후'} ${h12}:${pad2(mm)}${withSec?`:${pad2(ss)}`:''}`;
+  }
+
+  function ymd(d){
+    const y = d.getFullYear();
+    const m = pad2(d.getMonth()+1);
+    const dd = pad2(d.getDate());
+    return `${y}-${m}-${dd}`;
+  }
+
+  function loadJSON(key, fallback){
+    try{ const v = localStorage.getItem(key); return v? JSON.parse(v): fallback; }catch(_){ return fallback; }
+  }
+  function saveJSON(key, value){
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  // ===== Theme (mode + palette) =====
+  const defaultPalettes = [
+    {
+      id: 'pal_default',
+      name: '기본(블루)',
+      vars: {
+        bg: '#f4f6fb', card:'#ffffff', text:'#10142a', muted:'#5b647e', border:'#d9e0f2',
+        accent:'#2f67ff', success:'#1aae56', warning:'#d39a00', danger:'#d64545'
+      }
+    },
+    {
+      id: 'pal_mint',
+      name: '민트',
+      vars: {
+        bg:'#f3fbfa', card:'#ffffff', text:'#0f1a1a', muted:'#53696a', border:'#cfe9e7',
+        accent:'#1bb7a8', success:'#17a65a', warning:'#d39a00', danger:'#d64545'
+      }
+    },
+    {
+      id: 'pal_purple',
+      name: '퍼플',
+      vars: {
+        bg:'#f6f3fb', card:'#ffffff', text:'#1a102a', muted:'#6a5b7e', border:'#e0d9f2',
+        accent:'#7b4dff', success:'#1aae56', warning:'#d39a00', danger:'#d64545'
+      }
+    }
+  ];
+
+  function getPalettes(){
+    const stored = loadJSON(LS.PALETTES, null);
+    if(!stored || !Array.isArray(stored) || stored.length===0){
+      saveJSON(LS.PALETTES, defaultPalettes);
+      return defaultPalettes;
+    }
+    // ensure defaults exist at least once (do not overwrite user)
+    return stored;
+  }
+
+  function setCssVars(vars){
+    const r = document.documentElement;
+    r.style.setProperty('--bg', vars.bg);
+    r.style.setProperty('--card', vars.card);
+    r.style.setProperty('--text', vars.text);
+    r.style.setProperty('--muted', vars.muted);
+    r.style.setProperty('--border', vars.border);
+    r.style.setProperty('--accent', vars.accent);
+    r.style.setProperty('--success', vars.success);
+    r.style.setProperty('--warning', vars.warning);
+    r.style.setProperty('--danger', vars.danger);
+  }
+
+  function applyTheme(){
+    const mode = localStorage.getItem(LS.MODE) || 'light';
+    document.documentElement.setAttribute('data-mode', mode);
+    $('modeToggle').checked = (mode==='dark');
+    $('modeLabel').textContent = mode==='dark' ? 'Dark' : 'Light';
+
+    const palettes = getPalettes();
+    const pid = localStorage.getItem(LS.PALETTE_ID) || palettes[0].id;
+    const pal = palettes.find(p => p.id===pid) || palettes[0];
+
+    // In dark mode, we still use palette accent/success/warning/danger, but base colors can be dark defaults.
+    if(mode==='dark'){
+      // keep the dark base (defined in CSS) but override accent/success/warning/danger if palette differs
+      const r = document.documentElement;
+      r.style.setProperty('--accent', pal.vars.accent);
+      r.style.setProperty('--success', pal.vars.success);
+      r.style.setProperty('--warning', pal.vars.warning);
+      r.style.setProperty('--danger', pal.vars.danger);
+      // bg/card/text/muted/border remain dark defaults for readability
+    } else {
+      setCssVars(pal.vars);
+    }
+
+    // refresh selects
+    renderPaletteSelect();
+  }
+
+  function renderPaletteSelect(){
+    const palettes = getPalettes();
+    const pid = localStorage.getItem(LS.PALETTE_ID) || palettes[0].id;
+    const sel = $('paletteSelect');
+    sel.innerHTML = '';
+    for(const p of palettes){
+      const o = document.createElement('option');
+      o.value = p.id;
+      o.textContent = p.name;
+      if(p.id===pid) o.selected = true;
+      sel.appendChild(o);
+    }
+  }
+
+  $('modeToggle').addEventListener('change', () => {
+    localStorage.setItem(LS.MODE, $('modeToggle').checked ? 'dark' : 'light');
+    applyTheme();
+    showBanner('테마가 변경되었습니다.', 'success');
+  });
+
+  // ===== Layout toggle (PC/Mobile) =====
+  const LAYOUT_KEY = 'ST_LAYOUT_MODE';
+  function applyLayout(mode){
+    document.body.classList.toggle('force-mobile', mode==='mobile');
+    document.body.classList.toggle('force-desktop', mode==='desktop');
+    if($('layoutToggle')){
+      $('layoutToggle').checked = (mode==='mobile');
+      $('layoutLabel').textContent = (mode==='mobile') ? '모바일' : 'PC';
+    }
+    try{ localStorage.setItem(LAYOUT_KEY, mode); }catch(e){}
+  }
+  // init layout: on small screens default to mobile; user can force PC
+  (function initLayout(){
+    let saved = null;
+    try{ saved = localStorage.getItem(LAYOUT_KEY); }catch(e){}
+    if(saved==='desktop' || saved==='mobile'){
+      applyLayout(saved);
+    } else {
+      applyLayout('pc');
+    }
+  })();
+  $('layoutToggle').addEventListener('change', () => {
+    applyLayout($('layoutToggle').checked ? 'mobile' : 'desktop');
+  });
+
+
+  $('paletteSelect').addEventListener('change', () => {
+    localStorage.setItem(LS.PALETTE_ID, $('paletteSelect').value);
+    applyTheme();
+    showBanner('색상 테마가 적용되었습니다.', 'success');
+  });
+
+  // Palette manage modal
+  function openPal(){
+    $('palBack').style.display = 'flex';
+    renderPalList();
+  }
+  function closePal(){ $('palBack').style.display = 'none'; }
+  $('paletteManageBtn').onclick = openPal;
+  $('palClose').onclick = closePal;
+
+  function renderPalList(){
+    const palettes = getPalettes();
+    const list = $('palList');
+    list.innerHTML='';
+    const pid = localStorage.getItem(LS.PALETTE_ID) || palettes[0].id;
+    palettes.forEach((p, idx) => {
+      const o = document.createElement('option');
+      o.value = p.id;
+      o.textContent = p.name;
+      if(p.id===pid) o.selected = true;
+      list.appendChild(o);
+    });
+    if(list.value) loadPalToEditor(list.value);
+  }
+
+  function loadPalToEditor(id){
+    const palettes = getPalettes();
+    const p = palettes.find(x=>x.id===id);
+    if(!p) return;
+    $('palName').value = p.name;
+    $('palBg').value = p.vars.bg;
+    $('palCard').value = p.vars.card;
+    $('palText').value = p.vars.text;
+    $('palMuted').value = p.vars.muted;
+    $('palBorder').value = p.vars.border;
+    $('palAccent').value = p.vars.accent;
+    $('palSuccess').value = p.vars.success;
+    $('palWarning').value = p.vars.warning;
+    $('palDanger').value = p.vars.danger;
+  }
+
+  $('palList').addEventListener('change', () => loadPalToEditor($('palList').value));
+
+  function readPalEditor(){
+    return {
+      name: ($('palName').value || '').trim() || '새 팔레트',
+      vars: {
+        bg: $('palBg').value,
+        card: $('palCard').value,
+        text: $('palText').value,
+        muted: $('palMuted').value,
+        border: $('palBorder').value,
+        accent: $('palAccent').value,
+        success: $('palSuccess').value,
+        warning: $('palWarning').value,
+        danger: $('palDanger').value,
+      }
+    };
+  }
+
+  $('palAddBtn').onclick = () => {
+    const palettes = getPalettes();
+    const data = readPalEditor();
+    const id = 'pal_' + Math.random().toString(16).slice(2);
+    palettes.push({id, ...data});
+    saveJSON(LS.PALETTES, palettes);
+    localStorage.setItem(LS.PALETTE_ID, id);
+    applyTheme();
+    renderPalList();
+    showBanner('새 팔레트를 추가하였습니다.', 'success');
+  };
+
+  $('palUpdateBtn').onclick = () => {
+    const palettes = getPalettes();
+    const id = $('palList').value;
+    if(!id){ showModalMessage('안내', '변경하실 팔레트를 선택해 주세요.'); return; }
+    const idx = palettes.findIndex(p=>p.id===id);
+    if(idx<0) return;
+    const data = readPalEditor();
+    palettes[idx].name = data.name;
+    palettes[idx].vars = data.vars;
+    saveJSON(LS.PALETTES, palettes);
+    applyTheme();
+    renderPalList();
+    showBanner('팔레트를 변경하였습니다.', 'success');
+  };
+
+  $('palDeleteBtn').onclick = () => {
+    const palettes = getPalettes();
+    const id = $('palList').value;
+    if(!id){ showModalMessage('안내', '삭제하실 팔레트를 선택해 주세요.'); return; }
+    if(palettes.length<=1){ showModalMessage('안내', '최소 1개의 팔레트는 유지되어야 합니다.'); return; }
+    const next = palettes.filter(p=>p.id!==id);
+    saveJSON(LS.PALETTES, next);
+    localStorage.setItem(LS.PALETTE_ID, next[0].id);
+    applyTheme();
+    renderPalList();
+    showBanner('팔레트를 삭제하였습니다.', 'success');
+  };
+
+  // ===== Workbooks =====
+  function getWorkbooks(){
+    const w = loadJSON(LS.WORKBOOKS, null);
+    if(!w || !Array.isArray(w)){
+      const init = [];
+      saveJSON(LS.WORKBOOKS, init);
+      return init;
+    }
+    return w;
+  }
+  function setWorkbooks(w){ saveJSON(LS.WORKBOOKS, w); }
+
+  function renderWorkbookSelect(){
+    const sel = $('workbookSelect');
+    const w = getWorkbooks();
+    const saved = loadJSON(LS.UI, {}).workbookId || '';
+    sel.innerHTML='';
+    const none = document.createElement('option');
+    none.value='';
+    none.textContent='(선택 안 함)';
+    sel.appendChild(none);
+    w.forEach(x=>{
+      const o = document.createElement('option');
+      o.value=x.id;
+      o.textContent = `${x.title} · 문제 ${x.totalProblems} · 페이지 ${x.totalPages}`;
+      if(x.id===saved) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  $('workbookSelect').addEventListener('change', () => {
+    const ui = loadJSON(LS.UI, {});
+    ui.workbookId = $('workbookSelect').value;
+    saveJSON(LS.UI, ui);
+    showBanner('문제집 선택이 저장되었습니다.', 'success');
+  });
+
+  function openWB(){
+    $('wbBack').style.display='flex';
+    renderWBList();
+  }
+  function closeWB(){ $('wbBack').style.display='none'; }
+  $('workbookManageBtn').onclick = openWB;
+  $('wbClose').onclick = closeWB;
+
+  function renderWBList(){
+    const list = $('wbList');
+    list.innerHTML='';
+    const w = getWorkbooks();
+    w.forEach(x=>{
+      const o = document.createElement('option');
+      o.value=x.id;
+      o.textContent = `${x.title} (문제 ${x.totalProblems}, 페이지 ${x.totalPages})`;
+      list.appendChild(o);
+    });
+    if(list.value) loadWBToEditor(list.value);
+  }
+
+  function loadWBToEditor(id){
+    const w = getWorkbooks();
+    const x = w.find(a=>a.id===id);
+    if(!x) return;
+    $('wbTitle').value = x.title;
+    $('wbTotalProblems').value = x.totalProblems;
+    $('wbTotalPages').value = x.totalPages;
+  }
+
+  $('wbList').addEventListener('change', () => loadWBToEditor($('wbList').value));
+
+  function readWBEditor(){
+    const title = ($('wbTitle').value||'').trim();
+    const tp = parseInt(($('wbTotalProblems').value||'').trim(),10);
+    const tpg = parseInt(($('wbTotalPages').value||'').trim(),10);
+    if(!title){
+      showModalMessage('입력 오류입니다', '문제집 제목을 입력해 주세요.');
+      return null;
+    }
+    if(!Number.isFinite(tp) || tp<=0 || !Number.isFinite(tpg) || tpg<=0){
+      showModalMessage('입력 오류입니다', '전체 문제수와 전체 페이지수는 1 이상의 숫자로 입력해 주세요.');
+      return null;
+    }
+    return {title, totalProblems: tp, totalPages: tpg};
+  }
+
+  $('wbAddBtn').onclick = () => {
+    const data = readWBEditor();
+    if(!data) return;
+    const w = getWorkbooks();
+    const id = 'wb_' + Math.random().toString(16).slice(2);
+    w.push({id, ...data});
+    setWorkbooks(w);
+    renderWBList();
+    renderWorkbookSelect();
+    showBanner('문제집을 추가하였습니다.', 'success');
+  };
+
+  $('wbUpdateBtn').onclick = () => {
+    const id = $('wbList').value;
+    if(!id){ showModalMessage('안내', '변경하실 문제집을 선택해 주세요.'); return; }
+    const data = readWBEditor();
+    if(!data) return;
+    const w = getWorkbooks();
+    const idx = w.findIndex(x=>x.id===id);
+    if(idx<0) return;
+    w[idx] = {id, ...data};
+    setWorkbooks(w);
+    renderWBList();
+    renderWorkbookSelect();
+    showBanner('문제집을 변경하였습니다.', 'success');
+  };
+
+  $('wbDeleteBtn').onclick = () => {
+    const id = $('wbList').value;
+    if(!id){ showModalMessage('안내', '삭제하실 문제집을 선택해 주세요.'); return; }
+    const w = getWorkbooks().filter(x=>x.id!==id);
+    setWorkbooks(w);
+    // if selected removed
+    const ui = loadJSON(LS.UI, {});
+    if(ui.workbookId===id){ ui.workbookId=''; saveJSON(LS.UI, ui); }
+    renderWBList();
+    renderWorkbookSelect();
+    showBanner('문제집을 삭제하였습니다.', 'success');
+  };
+
+  // ===== Records =====
+  function getRecords(){ return loadJSON(LS.RECORDS, []); }
+  function setRecords(r){ saveJSON(LS.RECORDS, r); }
+
+  // ===== Timer/Stopwatch state =====
+  const state = {
+    mode: 'stopwatch',
+    running: false,
+    paused: false,
+    startMs: 0,
+    pauseMs: 0,
+    elapsedBeforePause: 0,
+    timerTotalMs: 0,
+    timerRemainMs: 0,
+    tickHandle: null,
+    lastUiUpdate: 0,
+    session: null,
+    liveCounter: 5,
+    liveHandle: null,
+    liveTickHandle: null,
+  };
+
+  function setTab(mode){
+    state.mode = mode;
+    $('tabStopwatch').classList.toggle('active', mode==='stopwatch');
+    $('tabTimer').classList.toggle('active', mode==='timer');
+    $('timerInputs').style.display = (mode==='timer') ? 'grid' : 'none';
+    $('timeDisplay').textContent = (mode==='stopwatch') ? '00:00:00.00' : '00:00:00';
+    syncButtons();
+  }
+
+  $('tabStopwatch').onclick = () => setTab('stopwatch');
+  $('tabTimer').onclick = () => setTab('timer');
+
+  function syncButtons(){
+    const hasRun = state.running;
+    $('startBtn').disabled = hasRun;
+    $('pauseBtn').disabled = !hasRun || state.paused;
+    $('resumeBtn').disabled = !hasRun || !state.paused;
+    $('stopBtn').disabled = !hasRun;
+    $('resetBtn').disabled = hasRun;
+
+    $('manualSaveBtn').style.display = ($('liveSaveToggle').checked) ? 'none' : 'inline-block';
+
+    // measurement areas
+    $('pageArea').style.display = $('pageToggle').checked ? 'grid' : 'none';
+    $('probArea').classList.toggle('hide', !$('probToggle').checked);
+
+    $('liveBadge').style.display = $('liveSaveToggle').checked ? 'grid' : 'none';
+
+    // correctness row
+    const skip = $('skipCwToggle').checked;
+    $('cwRow').style.display = skip ? 'none' : 'grid';
+  }
+
+  $('pageToggle').addEventListener('change', syncButtons);
+  $('probToggle').addEventListener('change', syncButtons);
+  $('skipCwToggle').addEventListener('change', syncButtons);
+  $('liveSaveToggle').addEventListener('change', () => {
+    localStorage.setItem(LS.AUTO_SAVE, $('liveSaveToggle').checked ? '1':'0');
+    syncButtons();
+    showBanner($('liveSaveToggle').checked ? '자동저장을 켰습니다.' : '자동저장을 껐습니다. 필요하시면 수동 저장을 눌러 주세요.', 'info');
+  });
+
+  $('manualSaveBtn').onclick = () => {
+    snapshotSave(true);
+    showBanner('수동 저장을 완료하였습니다.', 'success');
+  };
+
+  // problem mode switch
+  document.querySelectorAll('input[name="probMode"]').forEach(r => r.addEventListener('change', () => {
+    const val = document.querySelector('input[name="probMode"]:checked').value;
+    $('probRangeRow').classList.toggle('hide', val!=='range');
+    $('probManualRow').classList.toggle('hide', val!=='manual');
+  }));
+
+  function getSelectedWorkbook(){
+    const id = $('workbookSelect').value || loadJSON(LS.UI, {}).workbookId || '';
+    if(id) $('workbookSelect').value = id;
+    const w = getWorkbooks();
+    return w.find(x=>x.id===id) || null;
+  }
+
+  function numOrNull(v){
+    v = (v??'').toString().trim();
+    if(v==='') return null;
+    const n = parseInt(v,10);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function computeProbSolved(){
+    const mode = document.querySelector('input[name="probMode"]:checked').value;
+    if(mode==='manual'){
+      const n = numOrNull($('probSolvedManual').value);
+      return n;
+    }
+    const s = numOrNull($('probStart').value);
+    const e = numOrNull($('probEnd').value);
+    if(s==null || e==null) return null;
+    return Math.max(0, e - s + 1);
+  }
+
+  function updateProbAuto(){
+    const mode = document.querySelector('input[name="probMode"]:checked').value;
+    if(mode==='range'){
+      const v = computeProbSolved();
+      $('probSolvedAuto').value = (v==null) ? '' : String(v);
+    }
+  }
+  $('probStart').addEventListener('input', updateProbAuto);
+  $('probEnd').addEventListener('input', updateProbAuto);
+
+  function validateMeasurements(durationMs){
+    const wb = getSelectedWorkbook();
+
+    // pages
+    let page = null;
+    if($('pageToggle').checked){
+      const ps = numOrNull($('pageStart').value);
+      const pe = numOrNull($('pageEnd').value);
+      if(ps==null || pe==null){
+        return {ok:false, title:'입력 오류입니다', msg:'페이지 측정을 사용 중이시므로 시작 페이지와 끝 페이지를 모두 입력해 주세요. 다시 입력해 주세요.'};
+      }
+      if(wb && (ps<1 || pe<1 || ps>wb.totalPages || pe>wb.totalPages)){
+        return {ok:false, title:'입력 오류입니다', msg:`선택하신 문제집의 페이지 범위(1~${wb.totalPages})를 벗어났습니다. 다시 입력해 주세요.`};
+      }
+      const solvedPages = Math.max(0, pe - ps);
+      const minutes = Math.max(0.000001, durationMs/60000);
+      const ppm = solvedPages / minutes;
+      page = {start: ps, end: pe, solved: solvedPages, ppm};
+    }
+
+    // problems
+    let prob = null;
+    if($('probToggle').checked){
+      const mode = document.querySelector('input[name="probMode"]:checked').value;
+      let solved = null;
+      let start = null, end = null;
+      if(mode==='manual'){
+        solved = numOrNull($('probSolvedManual').value);
+        if(solved==null){
+          return {ok:false, title:'입력 오류입니다', msg:'문제수 측정을 사용 중이시므로 푼 문제수를 입력해 주세요. 다시 입력해 주세요.'};
+        }
+      } else {
+        start = numOrNull($('probStart').value);
+        end = numOrNull($('probEnd').value);
+        if(start==null || end==null){
+          return {ok:false, title:'입력 오류입니다', msg:'문제수 측정을 사용 중이시므로 시작/끝 문제번호를 모두 입력해 주세요. 다시 입력해 주세요.'};
+        }
+        if(wb && (start<1 || end<1 || start>wb.totalProblems || end>wb.totalProblems)){
+          return {ok:false, title:'입력 오류입니다', msg:`선택하신 문제집의 문제 범위(1~${wb.totalProblems})를 벗어났습니다. 다시 입력해 주세요.`};
+        }
+        solved = Math.max(0, end - start + 1);
+      }
+
+      if(wb && (solved<0 || solved>wb.totalProblems)){
+        return {ok:false, title:'입력 오류입니다', msg:`푼 문제수가 선택하신 문제집의 전체 문제수(${wb.totalProblems})를 초과합니다. 다시 입력해 주세요.`};
+      }
+
+      // correctness
+      const skip = $('skipCwToggle').checked;
+      let correct = null, wrong = null, acc = null, wr = null;
+      if(!skip){
+        correct = numOrNull($('correctCnt').value);
+        wrong = numOrNull($('wrongCnt').value);
+        if(correct==null || wrong==null){
+          return {ok:false, title:'입력 오류입니다', msg:'정답/오답 입력을 사용 중이시므로 정답 개수와 오답 개수를 모두 입력해 주세요. 다시 입력해 주세요.'};
+        }
+        if(correct<0 || wrong<0){
+          return {ok:false, title:'입력 오류입니다', msg:'정답/오답 개수는 0 이상의 숫자여야 합니다. 다시 입력해 주세요.'};
+        }
+        if(wb && (correct+wrong>wb.totalProblems)){
+          return {ok:false, title:'입력 오류입니다', msg:`정답+오답이 문제집 전체 문제수(${wb.totalProblems})를 초과합니다. 다시 입력해 주세요.`};
+        }
+        if((correct + wrong) !== solved){
+          return {ok:false, title:'입력 오류입니다', msg:`정답(${correct})+오답(${wrong})이 푼 문제수(${solved})와 일치하지 않습니다. 다시 입력해 주세요.`};
+        }
+        const total = correct + wrong;
+        acc = total>0 ? (correct/total) : null;
+        wr = total>0 ? (wrong/total) : null;
+      }
+
+      const minutes = Math.max(0.000001, durationMs/60000);
+      const ppm = solved / minutes;
+      prob = {mode, start, end, solved, ppm, skip, correct, wrong, acc, wr};
+    }
+
+    return {ok:true, page, prob};
+  }
+
+  // ===== Run / display =====
+  function getTimerInputMs(){
+    const h = numOrNull($('inH').value) || 0;
+    const m = numOrNull($('inM').value) || 0;
+    const s = numOrNull($('inS').value) || 0;
+    const total = (h*3600 + m*60 + s) * 1000;
+    return Math.max(0, total);
+  }
+
+  function updateDisplay(){
+    if(!state.running){
+      // show base
+      $('timeDisplay').textContent = state.mode==='stopwatch' ? '00:00:00.00' : '00:00:00';
+      return;
+    }
+    if(state.mode==='stopwatch'){
+      const now = Date.now();
+      let elapsed = state.elapsedBeforePause;
+      if(!state.paused) elapsed += (now - state.startMs);
+      $('timeDisplay').textContent = msToHMS(elapsed, true);
+    } else {
+      const now = Date.now();
+      let remain = state.timerRemainMs;
+      if(!state.paused){
+        const passed = now - state.startMs;
+        remain = Math.max(0, state.timerTotalMs - passed);
+        state.timerRemainMs = remain;
+      }
+      $('timeDisplay').textContent = msToHMS(remain, false);
+      if(!state.paused && remain<=0){
+        // auto stop
+        showBanner('타이머가 종료되었습니다.', 'success');
+        finishSession(true);
+      }
+    }
+  }
+
+  function startSession(){
+    const title = ($('titleInput').value||'').trim();
+    if(!title){
+      showModalMessage('입력 오류입니다', '제목을 입력해 주세요.');
+      return;
+    }
+
+    if(state.mode==='timer'){
+      const total = getTimerInputMs();
+      if(total<=0){
+        showModalMessage('입력 오류입니다', '타이머 시간(시/분/초)을 1초 이상으로 입력해 주세요.');
+        return;
+      }
+      state.timerTotalMs = total;
+      state.timerRemainMs = total;
+    }
+
+    state.running = true;
+    state.paused = false;
+    state.startMs = Date.now();
+    state.elapsedBeforePause = 0;
+
+    const startDate = new Date();
+    $('sessionStart').textContent = fmt12(startDate, true);
+    $('sessionEnd').textContent = '-';
+
+    state.session = {
+      id: 'rec_' + Date.now().toString(16) + Math.random().toString(16).slice(2),
+      date: ymd(startDate),
+      title,
+      workbookId: $('workbookSelect').value || '',
+      type: state.mode==='stopwatch' ? 'SW' : 'TM',
+      startMs: state.startMs,
+      endMs: null,
+      durationMs: 0,
+      // measurements filled later
+      page: null,
+      prob: null,
+      // snapshots
+      snapshots: []
+    };
+
+    saveRunState();
+    syncButtons();
+    updateDisplay();
+
+    if(state.tickHandle) clearInterval(state.tickHandle);
+    state.tickHandle = setInterval(() => {
+      updateDisplay();
+      // update prob auto while running
+      if($('probToggle').checked) updateProbAuto();
+    }, 50);
+
+    showBanner('공부를 시작하였습니다. 집중해 주세요!', 'success');
+  }
+
+  function pauseSession(){
+    if(!state.running || state.paused) return;
+    state.paused = true;
+    state.pauseMs = Date.now();
+    if(state.mode==='stopwatch'){
+      state.elapsedBeforePause += (state.pauseMs - state.startMs);
+    } else {
+      // timer: keep remain as is
+      state.timerRemainMs = Math.max(0, state.timerTotalMs - (state.pauseMs - state.startMs));
+    }
+    saveRunState();
+    syncButtons();
+    showBanner('일시정지하였습니다.', 'info');
+  }
+
+  function resumeSession(){
+    if(!state.running || !state.paused) return;
+    state.paused = false;
+    state.startMs = Date.now();
+    // for stopwatch, elapsedBeforePause already holds
+    // for timer, timerTotalMs remains; startMs reset and we adjust by setting timerTotalMs = remain + 0? simpler:
+    if(state.mode==='timer'){
+      state.timerTotalMs = state.timerRemainMs;
+      state.timerRemainMs = state.timerTotalMs;
+    }
+    saveRunState();
+    syncButtons();
+    showBanner('재개하였습니다.', 'success');
+  }
+
+  function resetSessionUI(){
+    state.running=false;
+    state.paused=false;
+    state.startMs=0;
+    state.elapsedBeforePause=0;
+    state.timerTotalMs=0;
+    state.timerRemainMs=0;
+    if(state.tickHandle) clearInterval(state.tickHandle);
+    state.tickHandle=null;
+    state.session=null;
+    $('sessionStart').textContent='-';
+    $('sessionEnd').textContent='-';
+    updateDisplay();
+    syncButtons();
+    clearRunState();
+  }
+
+  function finishSession(auto=false){
+    if(!state.running) return;
+
+    // compute duration
+    const end = Date.now();
+    let durationMs = 0;
+    if(state.mode==='stopwatch'){
+      durationMs = state.elapsedBeforePause + (state.paused ? 0 : (end - state.startMs));
+    } else {
+      // timer duration is total set - remaining
+      const totalSet = state.timerTotalMs;
+      const remain = state.paused ? state.timerRemainMs : Math.max(0, totalSet - (end - state.startMs));
+      durationMs = Math.max(0, totalSet - remain);
+    }
+
+    // validate measurements
+    const v = validateMeasurements(durationMs);
+    if(!v.ok){
+      showModalMessage(v.title, `${escapeHtml(v.msg)}`);
+      return;
+    }
+
+    state.running=false;
+    state.paused=false;
+
+    if(state.tickHandle) clearInterval(state.tickHandle);
+    state.tickHandle=null;
+
+    const endDate = new Date(end);
+    $('sessionEnd').textContent = fmt12(endDate, true);
+
+    // finalize record
+    const rec = state.session;
+    rec.endMs = end;
+    rec.durationMs = durationMs;
+    rec.page = v.page;
+    rec.prob = v.prob;
+
+    // add snapshot before save
+    rec.snapshots.push(makeSnapshot());
+
+    const records = getRecords();
+    records.push(rec);
+    setRecords(records);
+
+    if($('liveSaveToggle').checked){
+      // already saved in localStorage; this message is just UI
+      showBanner(auto ? '자동으로 저장되었습니다.' : '저장하였습니다.', 'success');
+    } else {
+      showBanner('자동저장이 꺼져 있습니다. 필요하시면 수동 저장을 눌러 주세요.', 'info');
+    }
+
+    resetSessionUI();
+    renderRecords();
+    renderCalendar();
+    renderStats('day');
+    computeTodayTotal();
+  }
+
+  function makeSnapshot(){
+    const now = Date.now();
+    const title = ($('titleInput').value||'').trim();
+    const wbId = $('workbookSelect').value || '';
+
+    // duration current
+    let durationMs = 0;
+    if(state.running){
+      if(state.mode==='stopwatch'){
+        durationMs = state.elapsedBeforePause + (state.paused ? 0 : (now - state.startMs));
+      } else {
+        const total = state.timerTotalMs;
+        const remain = state.paused ? state.timerRemainMs : Math.max(0, total - (now - state.startMs));
+        durationMs = Math.max(0, total - remain);
+      }
+    }
+
+    // best-effort measurement (do not validate hard here)
+    const pb = $('pageToggle').checked ? {
+      start: numOrNull($('pageStart').value),
+      end: numOrNull($('pageEnd').value)
+    } : null;
+
+    const probOn = $('probToggle').checked;
+    const probMode = probOn ? document.querySelector('input[name="probMode"]:checked').value : null;
+    const prob = probOn ? {
+      mode: probMode,
+      start: numOrNull($('probStart').value),
+      end: numOrNull($('probEnd').value),
+      solved: computeProbSolved(),
+      skip: $('skipCwToggle').checked,
+      correct: numOrNull($('correctCnt').value),
+      wrong: numOrNull($('wrongCnt').value)
+    } : null;
+
+    return {t: now, title, wbId, durationMs, pb, prob};
+  }
+
+  
+  function setLiveRing(counter){
+    const numEl = document.getElementById('liveNum');
+    const fg = document.querySelector('#liveBadge .ring-fg');
+    if(numEl) numEl.textContent = String(counter);
+    // progress: 5 -> full, 0 -> empty
+    const total = 5;
+    const C = 100.53; // circumference r=16
+    const frac = Math.max(0, Math.min(1, counter / total));
+    if(fg) fg.style.strokeDashoffset = String(C * (1 - frac));
+  }
+  function spinLiveRing(){
+    const svg = document.querySelector('#liveBadge .ring');
+    if(!svg) return;
+    svg.classList.remove('spin');
+    void svg.offsetWidth;
+    svg.classList.add('spin');
+  }
+
+  function saveLiveSnapshot(){
+    // lightweight snapshot: current UI + running timers
+    try{
+      persistAll();
+    }catch(e){
+      try{ localStorage.setItem('ST_STATE', JSON.stringify(state)); }catch(_){}
+    }
+  }
+// ===== Live save engine =====
+  function startLiveLoop(){
+    stopLiveLoop();
+    state.liveEnabled = true;
+    state.liveCounter = 5;
+    state.liveNextTick = performance.now() + 1000;
+    state.liveEnd = performance.now() + 5000;
+    setLiveRing(5);
+    // rAF loop for ring progress (works even when setInterval is throttled)
+    function raf(now){
+      if(!state.liveEnabled) return;
+      // update counter each 1s
+      if(now >= state.liveNextTick){
+        state.liveCounter = Math.max(0, state.liveCounter - 1);
+        state.liveNextTick += 1000;
+        setLiveRing(state.liveCounter);
+      }
+      // update progress smoothly based on remaining ms
+      const remain = Math.max(0, state.liveEnd - now);
+      const frac = remain / 5000;
+      const fg = document.querySelector('#liveBadge .ring-fg');
+      if(fg){
+        const C = 100.53;
+        fg.style.strokeDashoffset = String(C * (1 - frac));
+      }
+      if(remain <= 0){
+        // trigger save
+        spinLiveRing();
+        try{ saveLiveSnapshot(); }catch(e){}
+        // restart cycle
+        state.liveCounter = 5;
+        state.liveNextTick = now + 1000;
+        state.liveEnd = now + 5000;
+        setLiveRing(5);
+      }
+      state.liveRaf = requestAnimationFrame(raf);
+    }
+    state.liveRaf = requestAnimationFrame(raf);
+  }
+
+  function stopLiveLoop(){
+    if(state.liveTickHandle) clearInterval(state.liveTickHandle);
+    state.liveTickHandle = null;
+  }
+
+  $('liveSaveToggle').addEventListener('change', () => {
+    localStorage.setItem(LS.LIVE_SAVE, $('liveSaveToggle').checked ? '1':'0');
+    syncButtons();
+    if($('liveSaveToggle').checked){
+      showBanner('라이브 저장을 켰습니다. 5초마다 저장됩니다.', 'success');
+      startLiveLoop();
+    } else {
+      showBanner('라이브 저장을 껐습니다.', 'info');
+      stopLiveLoop();
+    }
+  });
+
+  function snapshotSave(force){
+    // live snapshot: store runstate so it survives refresh
+    if(!state.running) return;
+    if(!$('liveSaveToggle').checked && !force) return;
+
+    const snap = makeSnapshot();
+    try{
+      const rs = loadJSON(LS.RUNSTATE, null) || {};
+      rs.snapshot = snap;
+      rs.ui = {
+        title: $('titleInput').value,
+        workbookId: $('workbookSelect').value,
+        pageToggle: $('pageToggle').checked,
+        pageStart: $('pageStart').value,
+        pageEnd: $('pageEnd').value,
+        probToggle: $('probToggle').checked,
+        probMode: document.querySelector('input[name="probMode"]:checked').value,
+        probStart: $('probStart').value,
+        probEnd: $('probEnd').value,
+        probSolvedManual: $('probSolvedManual').value,
+        skipCw: $('skipCwToggle').checked,
+        correct: $('correctCnt').value,
+        wrong: $('wrongCnt').value,
+        tab: state.mode,
+        timerIn: {h:$('inH').value,m:$('inM').value,s:$('inS').value}
+      };
+      // running mechanics
+      rs.running = {
+        mode: state.mode,
+        running: state.running,
+        paused: state.paused,
+        startMs: state.startMs,
+        elapsedBeforePause: state.elapsedBeforePause,
+        timerTotalMs: state.timerTotalMs,
+        timerRemainMs: state.timerRemainMs,
+        session: state.session
+      };
+      saveJSON(LS.RUNSTATE, rs);
+    } catch(_){ }
+  }
+
+  function saveRunState(){ snapshotSave(true); }
+  function clearRunState(){ localStorage.removeItem(LS.RUNSTATE); }
+
+  // ===== Records rendering =====
+  function renderRecords(){
+    const list = $('recordList');
+    list.innerHTML='';
+    const records = getRecords().slice().reverse();
+    if(records.length===0){
+      list.innerHTML = `<div class="small">아직 기록이 없습니다. 타이머를 시작해 주세요.</div>`;
+      return;
+    }
+
+    for(const r of records){
+      const start = new Date(r.startMs);
+      const end = r.endMs ? new Date(r.endMs) : null;
+      const dur = msToHMS(r.durationMs, false);
+
+      const wb = (r.workbookId ? getWorkbooks().find(w=>w.id===r.workbookId) : null);
+      const wbText = wb ? ` · ${wb.title}` : '';
+
+      const sub = `${fmt12(start,true)} ~ ${end?fmt12(end,true):'-'} · ${dur} · ${r.type==='SW'?'스톱워치':'타이머'}${wbText}`;
+
+      const item = document.createElement('div');
+      item.className='item';
+      item.innerHTML = `
+        <div class="meta">
+          <div class="name">${escapeHtml(r.title)}</div>
+          <div class="sub">${escapeHtml(sub)}</div>
+        </div>
+        <div class="right">
+          <button class="btn" data-act="detail">상세보기</button>
+          <button class="btn danger" data-act="del">삭제</button>
+        </div>
+      `;
+      item.querySelector('[data-act="detail"]').onclick = () => openDetail(r.id);
+      item.querySelector('[data-act="del"]').onclick = () => deleteRecord(r.id);
+      list.appendChild(item);
+    }
+  }
+
+  function deleteRecord(id){
+    const records = getRecords().filter(r=>r.id!==id);
+    setRecords(records);
+    renderRecords();
+    renderCalendar();
+    computeTodayTotal();
+    showBanner('기록을 삭제하였습니다.', 'success');
+  }
+
+  function openDetail(id){
+    const r = getRecords().find(x=>x.id===id);
+    if(!r) return;
+    const start = new Date(r.startMs);
+    const end = new Date(r.endMs);
+    const dur = msToHMS(r.durationMs, true);
+
+    const wb = r.workbookId ? getWorkbooks().find(w=>w.id===r.workbookId) : null;
+
+    const pageHtml = r.page ? `
+      <div class="divider"></div>
+      <h3 style="font-size:14px;margin:0 0 6px 0">페이지 측정</h3>
+      <div class="kpi">
+        <div class="k"><div class="t">시작 페이지</div><div class="v">${r.page.start}</div></div>
+        <div class="k"><div class="t">끝 페이지</div><div class="v">${r.page.end}</div></div>
+        <div class="k"><div class="t">푼 페이지</div><div class="v">${r.page.solved}</div></div>
+        <div class="k"><div class="t">분당 페이지</div><div class="v">${r.page.ppm.toFixed(2)}</div></div>
+      </div>
+    ` : '';
+
+    let probHtml = '';
+    if(r.prob){
+      const pr = r.prob;
+      const modeText = pr.mode==='manual' ? '직접 입력' : '시작/끝';
+      const acc = (pr.acc==null) ? '-' : (pr.acc*100).toFixed(1)+'%';
+      const wr = (pr.wr==null) ? '-' : (pr.wr*100).toFixed(1)+'%';
+      probHtml = `
+        <div class="divider"></div>
+        <h3 style="font-size:14px;margin:0 0 6px 0">문제수 측정</h3>
+        <div class="small">입력 방식: <b>${modeText}</b></div>
+        <div style="height:8px"></div>
+        <div class="kpi">
+          ${pr.mode==='range' ? `
+            <div class="k"><div class="t">시작 문제번호</div><div class="v">${pr.start??'-'}</div></div>
+            <div class="k"><div class="t">끝 문제번호</div><div class="v">${pr.end??'-'}</div></div>
+          ` : ''}
+          <div class="k"><div class="t">푼 문제수</div><div class="v">${pr.solved}</div></div>
+          <div class="k"><div class="t">분당 문제수</div><div class="v">${pr.ppm.toFixed(2)}</div></div>
+          <div class="k"><div class="t">정답</div><div class="v">${pr.skip ? '-' : pr.correct}</div></div>
+          <div class="k"><div class="t">오답</div><div class="v">${pr.skip ? '-' : pr.wrong}</div></div>
+          <div class="k"><div class="t">정답률</div><div class="v">${pr.skip ? '-' : acc}</div></div>
+          <div class="k"><div class="t">오답률</div><div class="v">${pr.skip ? '-' : wr}</div></div>
+        </div>
+      `;
+    }
+
+    $('detailBody').innerHTML = `
+      <div class="kpi">
+        <div class="k"><div class="t">제목</div><div class="v">${escapeHtml(r.title)}</div></div>
+        <div class="k"><div class="t">문제집</div><div class="v">${escapeHtml(wb?wb.title:'-')}</div></div>
+        <div class="k"><div class="t">유형</div><div class="v">${r.type==='SW'?'스톱워치':'타이머'}</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="kpi">
+        <div class="k"><div class="t">시작 시각</div><div class="v">${fmt12(start,true)}</div></div>
+        <div class="k"><div class="t">종료 시각</div><div class="v">${fmt12(end,true)}</div></div>
+        <div class="k"><div class="t">공부 시간</div><div class="v">${dur}</div></div>
+      </div>
+      ${pageHtml}
+      ${probHtml}
+    `;
+    $('detailBack').style.display='flex';
+  }
+
+  $('detailClose').onclick = () => $('detailBack').style.display='none';
+
+  // ===== Calendar =====
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+  let selected = ymd(new Date());
+
+  function renderCalendar(){
+    const grid = $('calGrid');
+    grid.innerHTML='';
+
+    const first = new Date(calYear, calMonth, 1);
+    const startDow = first.getDay();
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+    $('monthLabel').textContent = `${calYear}년 ${calMonth+1}월`;
+
+    const dows = ['일','월','화','수','목','금','토'];
+    for(const d of dows){
+      const el = document.createElement('div');
+      el.className='dow';
+      el.textContent=d;
+      grid.appendChild(el);
+    }
+
+    const records = getRecords();
+    const recDays = new Set(records.map(r=>r.date));
+
+    const totalCells = 42; // 6 weeks
+    const prevDays = new Date(calYear, calMonth, 0).getDate();
+
+    for(let i=0;i<totalCells;i++){
+      const idx = i - startDow + 1;
+      let d; let inMonth=true;
+      if(idx<=0){
+        d = new Date(calYear, calMonth-1, prevDays + idx);
+        inMonth=false;
+      } else if(idx>daysInMonth){
+        d = new Date(calYear, calMonth+1, idx - daysInMonth);
+        inMonth=false;
+      } else {
+        d = new Date(calYear, calMonth, idx);
+      }
+      const key = ymd(d);
+      const el = document.createElement('div');
+      el.className='day' + (inMonth?'':' muted');
+      if(key===ymd(new Date())) el.classList.add('today');
+      el.innerHTML = `<div>${d.getDate()}</div>`;
+      const hasRec = recDays.has(key);
+      // reservation dots: placeholder (yellow) for future expansion
+      const hasResv = false;
+      if(hasRec || hasResv){
+        const dot = document.createElement('div');
+        dot.className='dot';
+        if(hasRec){ const i1 = document.createElement('i'); i1.className='g'; dot.appendChild(i1); }
+        if(hasResv){ const i2 = document.createElement('i'); i2.className='y'; dot.appendChild(i2); }
+        el.appendChild(dot);
+      }
+      el.onclick = () => {
+        selected = key;
+        $('selectedDate').textContent = key;
+        renderDayRecords();
+      };
+      grid.appendChild(el);
+    }
+
+    $('selectedDate').textContent = selected;
+    renderDayRecords();
+  }
+
+  function renderDayRecords(){
+    const list = $('dayRecords');
+    list.innerHTML='';
+    const records = getRecords().filter(r=>r.date===selected).slice().reverse();
+    if(records.length===0){
+      list.innerHTML = `<div class="small">선택하신 날짜에는 기록이 없습니다.</div>`;
+      return;
+    }
+    for(const r of records){
+      const start = new Date(r.startMs);
+      const end = new Date(r.endMs);
+      const dur = msToHMS(r.durationMs,false);
+      const item = document.createElement('div');
+      item.className='item';
+      item.innerHTML = `
+        <div class="meta">
+          <div class="name">${escapeHtml(r.title)}</div>
+          <div class="sub">${fmt12(start,true)} ~ ${fmt12(end,true)} · ${dur}</div>
+        </div>
+        <div class="right">
+          <button class="btn" data-act="detail">상세보기</button>
+        </div>
+      `;
+      item.querySelector('[data-act="detail"]').onclick = () => openDetail(r.id);
+      list.appendChild(item);
+    }
+  }
+
+  $('prevMonth').onclick = () => {
+    calMonth -= 1;
+    if(calMonth<0){ calMonth=11; calYear-=1; }
+    renderCalendar();
+  };
+  $('nextMonth').onclick = () => {
+    calMonth += 1;
+    if(calMonth>11){ calMonth=0; calYear+=1; }
+    renderCalendar();
+  };
+
+  // collapse
+  $('collapseCalBtn').onclick = () => {
+    $('side').classList.add('collapsed');
+    $('sideCollapsed').classList.remove('hide');
+    const ui = loadJSON(LS.UI, {});
+    ui.sideCollapsed = true;
+    saveJSON(LS.UI, ui);
+  };
+  $('expandCalBtn').onclick = () => {
+    $('side').classList.remove('collapsed');
+    $('sideCollapsed').classList.add('hide');
+    const ui = loadJSON(LS.UI, {});
+    ui.sideCollapsed = false;
+    saveJSON(LS.UI, ui);
+  };
+
+  // ===== Stats =====
+  function getPeriodRange(kind){
+    const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
+
+    if(kind==='day'){
+      start.setHours(0,0,0,0);
+      end.setHours(23,59,59,999);
+    } else if(kind==='week'){
+      const day = now.getDay(); // 0 Sunday
+      const diffToMon = (day===0 ? -6 : 1 - day);
+      start.setDate(now.getDate() + diffToMon);
+      start.setHours(0,0,0,0);
+      end.setTime(start.getTime() + 6*86400000);
+      end.setHours(23,59,59,999);
+    } else if(kind==='month'){
+      start.setDate(1);
+      start.setHours(0,0,0,0);
+      end.setMonth(now.getMonth()+1, 0);
+      end.setHours(23,59,59,999);
+    } else if(kind==='year'){
+      start.setMonth(0,1);
+      start.setHours(0,0,0,0);
+      end.setMonth(11,31);
+      end.setHours(23,59,59,999);
+    }
+    return {start, end};
+  }
+
+  function renderStats(kind){
+    const {start, end} = getPeriodRange(kind);
+    const records = getRecords().filter(r => r.startMs>=start.getTime() && r.startMs<=end.getTime());
+
+    const totalMs = records.reduce((a,r)=>a+r.durationMs, 0);
+    const totalMin = totalMs/60000;
+
+    let pages = 0;
+    let probs = 0;
+    let correct = 0;
+    let wrong = 0;
+    for(const r of records){
+      if(r.page) pages += (r.page.solved||0);
+      if(r.prob){
+        probs += (r.prob.solved||0);
+        if(!r.prob.skip){
+          correct += (r.prob.correct||0);
+          wrong += (r.prob.wrong||0);
+        }
+      }
+    }
+
+    const ppm = totalMin>0 ? pages/totalMin : 0;
+    const qpm = totalMin>0 ? probs/totalMin : 0;
+
+    const totalAns = correct+wrong;
+    const acc = totalAns>0 ? (correct/totalAns) : null;
+
+    const kpi = $('statsKpi');
+    kpi.innerHTML='';
+
+    const add = (t,v) => {
+      const el = document.createElement('div');
+      el.className='k';
+      el.innerHTML = `<div class="t">${escapeHtml(t)}</div><div class="v">${escapeHtml(v)}</div>`;
+      kpi.appendChild(el);
+    };
+
+    add('기간', `${ymd(start)} ~ ${ymd(end)}`);
+    add('총 공부시간', msToHMS(totalMs,false));
+    add('총 푼 페이지', String(pages));
+    add('분당 페이지', ppm.toFixed(2));
+    add('총 푼 문제', String(probs));
+    add('분당 문제', qpm.toFixed(2));
+    add('정답/오답', totalAns>0 ? `${correct} / ${wrong}` : '-');
+    add('정답률', acc==null ? '-' : (acc*100).toFixed(1)+'%');
+
+    $('statsHint').textContent = '통계는 기록된 세션을 기반으로 자동 계산됩니다.';
+  }
+
+  document.querySelectorAll('[data-stat]').forEach(btn => btn.onclick = () => renderStats(btn.dataset.stat));
+
+  // ===== Today total =====
+  function computeTodayTotal(){
+    const today = ymd(new Date());
+    const records = getRecords().filter(r=>r.date===today);
+    const totalMs = records.reduce((a,r)=>a+r.durationMs, 0);
+    $('todayTotal').textContent = msToHMS(totalMs, false);
+  }
+
+  // ===== Current clock =====
+  setInterval(() => {
+    $('nowClock').textContent = fmt12(new Date(), true);
+  }, 250);
+
+  // ===== Controls =====
+  $('startBtn').onclick = startSession;
+  $('pauseBtn').onclick = pauseSession;
+  $('resumeBtn').onclick = resumeSession;
+  $('stopBtn').onclick = () => finishSession(false);
+  $('resetBtn').onclick = () => {
+    showModalMessage('안내', '초기화하시면 현재 입력값이 유지되며, 타이머만 초기화됩니다. 진행하시겠습니까?');
+    // only reset timer state, keep inputs; simple confirm via modal: reuse ok only
+    // We'll just reset directly (no browser confirm)
+    setTimeout(() => {
+      resetSessionUI();
+      showBanner('초기화하였습니다.', 'success');
+    }, 50);
+  };
+
+  $('exitBtn').onclick = () => {
+    // Try close; may fail.
+    window.close();
+    setTimeout(() => {
+      showModalMessage('안내', '브라우저 보안 정책으로 인해 자동 종료가 제한될 수 있습니다. 필요하시면 이 탭을 직접 닫아 주세요.');
+    }, 200);
+  };
+
+  $('clearTodayBtn').onclick = () => {
+    const today = ymd(new Date());
+    const records = getRecords().filter(r=>r.date!==today);
+    setRecords(records);
+    renderRecords();
+    renderCalendar();
+    computeTodayTotal();
+    showBanner('오늘 기록을 초기화하였습니다.', 'success');
+  };
+
+  $('clearAllBtn').onclick = () => {
+    showModalMessage('안내', '전체 기록을 초기화하려면, 새로고침 후에도 복구되지 않습니다. 정말로 진행하시겠습니까?');
+    // immediate (no confirm buttons in this simple modal), so we do not auto delete.
+    // Provide action in banner instead.
+    showBanner('전체 초기화를 진행하시겠습니까?', 'info', [{label:'전체 초기화', onClick: () => {
+      setRecords([]);
+      renderRecords();
+      renderCalendar();
+      computeTodayTotal();
+      showBanner('전체 기록을 초기화하였습니다.', 'success');
+    }}]);
+  };
+
+  // ===== Restore UI settings =====
+  function restoreSettings(){
+    // auto/live
+    $('liveSaveToggle').checked = (localStorage.getItem(LS.AUTO_SAVE) ?? '1') === '1';
+    $('liveSaveToggle').checked = (localStorage.getItem(LS.LIVE_SAVE) ?? '1') === '1';
+
+    const ui = loadJSON(LS.UI, {});
+    if(ui.title) $('titleInput').value = ui.title;
+    if(ui.workbookId) $('workbookSelect').value = ui.workbookId;
+
+    if(ui.sideCollapsed){
+      $('side').classList.add('collapsed');
+      $('sideCollapsed').classList.remove('hide');
+    }
+
+    syncButtons();
+
+    // Restore runstate if any
+    const rs = loadJSON(LS.RUNSTATE, null);
+    if(rs && rs.running && rs.running.running){
+      // restore basic UI
+      if(rs.ui){
+        $('titleInput').value = rs.ui.title || '';
+        $('workbookSelect').value = rs.ui.workbookId || '';
+        $('pageToggle').checked = !!rs.ui.pageToggle;
+        $('pageStart').value = rs.ui.pageStart || '';
+        $('pageEnd').value = rs.ui.pageEnd || '';
+
+        $('probToggle').checked = !!rs.ui.probToggle;
+        // prob mode
+        if(rs.ui.probMode){
+          document.querySelectorAll('input[name="probMode"]').forEach(r=>{ r.checked = (r.value===rs.ui.probMode); });
+        }
+        $('probStart').value = rs.ui.probStart || '';
+        $('probEnd').value = rs.ui.probEnd || '';
+        $('probSolvedManual').value = rs.ui.probSolvedManual || '';
+
+        $('skipCwToggle').checked = !!rs.ui.skipCw;
+        $('correctCnt').value = rs.ui.correct || '';
+        $('wrongCnt').value = rs.ui.wrong || '';
+
+        if(rs.ui.tab){
+          setTab(rs.ui.tab);
+        }
+        if(rs.ui.timerIn){
+          $('inH').value = rs.ui.timerIn.h || '';
+          $('inM').value = rs.ui.timerIn.m || '';
+          $('inS').value = rs.ui.timerIn.s || '';
+        }
+      }
+
+      // restore mechanics
+      const r = rs.running;
+      state.mode = r.mode || 'stopwatch';
+      setTab(state.mode);
+      state.running = true;
+      state.paused = !!r.paused;
+      state.startMs = r.startMs || Date.now();
+      state.elapsedBeforePause = r.elapsedBeforePause || 0;
+      state.timerTotalMs = r.timerTotalMs || 0;
+      state.timerRemainMs = r.timerRemainMs || 0;
+      state.session = r.session || null;
+
+      // session start label
+      if(state.session && state.session.startMs){
+        $('sessionStart').textContent = fmt12(new Date(state.session.startMs), true);
+      }
+
+      // tick
+      if(state.tickHandle) clearInterval(state.tickHandle);
+      state.tickHandle = setInterval(updateDisplay, 50);
+      syncButtons();
+      showBanner('이전 실행 상태를 복구하였습니다.', 'success');
+    }
+  }
+
+  // ===== Init =====
+  function init(){
+    // mode default
+    if(!localStorage.getItem(LS.MODE)) localStorage.setItem(LS.MODE, 'light');
+    if(!localStorage.getItem(LS.AUTO_SAVE)) localStorage.setItem(LS.AUTO_SAVE, '1');
+    if(!localStorage.getItem(LS.LIVE_SAVE)) localStorage.setItem(LS.LIVE_SAVE, '1');
+
+    applyTheme();
+    renderWorkbookSelect();
+    computeTodayTotal();
+    renderRecords();
+    renderCalendar();
+    renderStats('day');
+    restoreSettings();
+    syncButtons();
+    startLiveLoop();
+  }
+
+  init();
+
+  // Save UI inputs when they change (no browser message)
+  const uiFields = ['titleInput','pageStart','pageEnd','probStart','probEnd','probSolvedManual','correctCnt','wrongCnt','inH','inM','inS'];
+  uiFields.forEach(id => $(id).addEventListener('input', () => {
+    const ui = loadJSON(LS.UI, {});
+    ui.title = $('titleInput').value;
+    ui.workbookId = $('workbookSelect').value;
+    saveJSON(LS.UI, ui);
+    if($('liveSaveToggle').checked) snapshotSave(false);
+  }));
+
+  // keep prob auto updated
+  document.querySelectorAll('input[name="probMode"]').forEach(r => r.addEventListener('change', () => {
+    updateProbAuto();
+    syncButtons();
+  }));
+
+  // Close modals on backdrop click
+  function backdropClose(backId){
+    const b = $(backId);
+    b.addEventListener('click', (e) => { if(e.target===b) b.style.display='none'; });
+  }
+  backdropClose('detailBack');
+  backdropClose('wbBack');
+  backdropClose('palBack');
+  backdropClose('msgBack');
+
+})();
+
+  function toast(message){
+    // v6.2.5: 알림바/알림목록으로만 표시합니다.
+    try{
+      if(typeof pushNotice === 'function') pushNotice(String(message));
+    }catch(e){}
+  }
+
+  // ===== Color wheel + brightness (v6.1.1) =====
+  const CW_KEY = 'ST_CW_HSV';
+  function openModal(id){ const m=document.getElementById(id); if(!m) return; m.setAttribute('aria-hidden','false'); }
+  function closeModal(id){ const m=document.getElementById(id); if(!m) return; m.setAttribute('aria-hidden','true'); }
+  document.addEventListener('click', (e)=>{
+    const t=e.target;
+    if(t && t.dataset && t.dataset.close){ closeModal(t.dataset.close); }
+  });
+  const openBtn = document.getElementById('openColorWheelBtn');
+  if(openBtn) openBtn.addEventListener('click', ()=> openModal('colorWheelModal'));
+
+  function hsvToRgb(h,s,v){
+    h=((h%360)+360)%360; s=Math.max(0,Math.min(1,s)); v=Math.max(0,Math.min(1,v));
+    const c=v*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=v-c;
+    let r=0,g=0,b=0;
+    if(h<60){r=c;g=x;}
+    else if(h<120){r=x;g=c;}
+    else if(h<180){g=c;b=x;}
+    else if(h<240){g=x;b=c;}
+    else if(h<300){r=x;b=c;}
+    else {r=c;b=x;}
+    return {r:Math.round((r+m)*255), g:Math.round((g+m)*255), b:Math.round((b+m)*255)};
+  }
+  function rgbToHex(r,g,b){
+    const to=n=>String(n.toString(16)).padStart(2,'0');
+    return ('#'+to(r)+to(g)+to(b)).toUpperCase();
+  }
+  function setAccent(hex){
+    document.documentElement.style.setProperty('--accent', hex);
+  }
+
+  let cw = {h:210, s:0.78, v:1.0};
+
+  function loadCW(){
+    try{
+      const raw = localStorage.getItem(CW_KEY);
+      if(raw){ const o=JSON.parse(raw);
+        if(o && typeof o.h==='number' && typeof o.s==='number' && typeof o.v==='number') cw={h:o.h,s:o.s,v:o.v};
+      }
+    }catch(e){}
+  }
+  function saveCW(){
+    try{ localStorage.setItem(CW_KEY, JSON.stringify(cw)); }catch(e){}
+  }
+  function applyCWToUI(){
+    const rgb = hsvToRgb(cw.h,cw.s,cw.v);
+    const hex = rgbToHex(rgb.r,rgb.g,rgb.b);
+    setAccent(hex);
+    const sw=document.getElementById('cwSwatch'); if(sw) sw.style.background=hex;
+    const hx=document.getElementById('cwHex'); if(hx) hx.textContent=hex;
+    const topRGB = hsvToRgb(cw.h,cw.s,1);
+    const topHex = rgbToHex(topRGB.r, topRGB.g, topRGB.b);
+    const bar=document.getElementById('cwBrightBar'); if(bar) bar.style.background=`linear-gradient(to top, #000, ${topHex})`;
+  }
+  function drawWheel(){
+    const c=document.getElementById('cwCanvas'); if(!c) return;
+    const ctx=c.getContext('2d');
+    const w=c.width,h=c.height,cx=w/2,cy=h/2,r=Math.min(cx,cy)-2;
+    const img=ctx.createImageData(w,h);
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        const dx=x-cx, dy=y-cy;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const i=(y*w+x)*4;
+        if(dist>r){ img.data[i+3]=0; continue; }
+        const ang=Math.atan2(dy,dx);
+        const hue=(ang*180/Math.PI+360)%360;
+        const sat=Math.min(1, dist/r);
+        const rgb=hsvToRgb(hue,sat,1);
+        img.data[i]=rgb.r; img.data[i+1]=rgb.g; img.data[i+2]=rgb.b; img.data[i+3]=255;
+      }
+    }
+    ctx.putImageData(img,0,0);
+  }
+  function placeKnobs(){
+    const c=document.getElementById('cwCanvas');
+    const knob=document.getElementById('cwKnob');
+    if(c && knob){
+      const rect=c.getBoundingClientRect();
+      const r=rect.width/2-2, cx=rect.width/2, cy=rect.height/2;
+      const ang=cw.h*Math.PI/180;
+      const dist=cw.s*r;
+      knob.style.left = (cx + Math.cos(ang)*dist) + 'px';
+      knob.style.top  = (cy + Math.sin(ang)*dist) + 'px';
+    }
+    const track=document.getElementById('cwBrightTrack');
+    const k=document.getElementById('cwBrightKnob');
+    if(track && k){
+      const rect=track.getBoundingClientRect();
+      const top=6, bottom=rect.height-6;
+      const y = bottom - cw.v*(bottom-top);
+      k.style.top = y + 'px';
+    }
+    const slider=document.getElementById('cwBright');
+    if(slider) slider.value = String(Math.round(cw.v*100));
+  }
+  function pickWheel(clientX, clientY){
+    const c=document.getElementById('cwCanvas'); if(!c) return;
+    const rect=c.getBoundingClientRect();
+    const x=clientX-rect.left, y=clientY-rect.top;
+    const cx=rect.width/2, cy=rect.height/2;
+    const dx=x-cx, dy=y-cy;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const r=rect.width/2-2;
+    if(dist>r) return;
+    const ang=Math.atan2(dy,dx);
+    cw.h=(ang*180/Math.PI+360)%360;
+    cw.s=Math.max(0, Math.min(1, dist/r));
+    applyCWToUI();
+    placeKnobs();
+  }
+
+  function initCW(){
+    loadCW();
+    applyCWToUI();
+    drawWheel();
+    placeKnobs();
+
+    const c=document.getElementById('cwCanvas');
+    if(c){
+      let down=false;
+      const downFn=(e)=>{ down=true; const p=(e.touches?e.touches[0]:e); pickWheel(p.clientX,p.clientY); e.preventDefault(); };
+      const moveFn=(e)=>{ if(!down) return; const p=(e.touches?e.touches[0]:e); pickWheel(p.clientX,p.clientY); e.preventDefault(); };
+      const upFn=()=>{ down=false; };
+      c.addEventListener('mousedown', downFn);
+      window.addEventListener('mousemove', moveFn);
+      window.addEventListener('mouseup', upFn);
+      c.addEventListener('touchstart', downFn, {passive:false});
+      window.addEventListener('touchmove', moveFn, {passive:false});
+      window.addEventListener('touchend', upFn);
+    }
+
+    const slider=document.getElementById('cwBright');
+    if(slider){
+      slider.addEventListener('input', ()=>{
+        cw.v=Math.max(0, Math.min(1, Number(slider.value)/100));
+        applyCWToUI();
+        placeKnobs();
+      });
+    }
+
+    const copy=document.getElementById('cwCopy');
+    if(copy) copy.addEventListener('click', async ()=>{
+      const hex = document.getElementById('cwHex')?.textContent || '';
+      try{ await navigator.clipboard.writeText(hex); toast('복사되었습니다.'); }
+      catch(e){ toast('복사에 실패했습니다.'); }
+    });
+
+    const apply=document.getElementById('cwApply');
+    if(apply) apply.addEventListener('click', ()=>{
+      saveCW();
+      toast('색상이 적용되었습니다.');
+      closeModal('colorWheelModal');
+    });
+
+    // apply immediately on load
+    saveCW();
+  }
+  window.addEventListener('load', initCW);
+
+  // ===== Notice system (v6.1.7) =====
+  const NOTICE_KEY = 'ST_NOTICES';
+  const NOTICE_AUTOCLEAR_KEY = 'ST_NOTICE_AUTOCLEAR';
+
+  function fmtAmPm(ts){
+    const d = new Date(ts);
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const ampm = (h < 12) ? '오전' : '오후';
+    h = h % 12; if(h === 0) h = 12;
+    return `${ampm} ${h}:${String(m).padStart(2,'0')}`;
+  }
+  function loadNotices(){
+    try{ const raw = localStorage.getItem(NOTICE_KEY); return raw ? (JSON.parse(raw) || []) : []; }
+    catch(e){ return []; }
+  }
+  function saveNotices(arr){
+    try{ localStorage.setItem(NOTICE_KEY, JSON.stringify(arr.slice(0,200))); }catch(e){}
+  }
+  function setTopNotice(item){
+    const textEl = document.getElementById('noticeText');
+    const timeEl = document.getElementById('noticeTime');
+    const metaEl = document.getElementById('noticeMeta');
+    if(item){
+      if(textEl) textEl.textContent = item.text;
+      if(timeEl) timeEl.textContent = fmtAmPm(item.ts);
+      if(metaEl) metaEl.style.display = 'flex';
+    }else{
+      if(textEl) textEl.textContent = '알림은 여기서 표시됩니다.';
+      if(timeEl) timeEl.textContent = '';
+      if(metaEl) metaEl.style.display = 'none';
+    }
+  }
+  function renderNoticeList(){
+    const list = document.getElementById('noticeList');
+    if(!list) return;
+    const arr = loadNotices();
+    list.innerHTML = '';
+    if(arr.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'hint';
+      empty.style.padding = '10px 6px';
+      empty.textContent = '아직 알림가 없습니다.';
+      list.appendChild(empty);
+      return;
+    }
+    // v6.3.1: '전체' 선택 항목(알림 있을 때만)
+    const allRow = document.createElement('div');
+    allRow.className = 'noticeItem';
+    allRow.innerHTML = `
+      <input type="checkbox" class="noticePick noticePickAll" data-id="__ALL__" aria-label="전체 선택" />
+      <div class="noticeItemBody">
+        <div class="noticeItemText" style="font-weight:800">전체</div>
+        <div class="noticeItemTime"></div>
+      </div>
+    `;
+    list.appendChild(allRow);
+
+    // 전체 토글 동작
+    const allCb = allRow.querySelector('.noticePickAll');
+    allCb.addEventListener('change', ()=>{
+      const on = allCb.checked;
+      list.querySelectorAll('.noticePick:not(.noticePickAll)').forEach(cb=> cb.checked = on);
+    });
+
+    // 개별 변경 시 전체 체크 동기화
+    const syncAll = ()=>{
+      const items = Array.from(list.querySelectorAll('.noticePick:not(.noticePickAll)'));
+      const allOn = items.length>0 && items.every(cb=>cb.checked);
+      allCb.checked = allOn;
+    };
+    list.addEventListener('change', (e)=>{
+      const t=e.target;
+      if(t && t.classList && t.classList.contains('noticePick') && !t.classList.contains('noticePickAll')){
+        syncAll();
+      }
+    });
+
+    arr.forEach((it)=>{
+      const row = document.createElement('div');
+      row.className = 'noticeItem';
+      row.innerHTML = `
+        <input type="checkbox" class="noticePick" data-id="${it.id}" aria-label="선택" />
+        <div class="noticeItemBody">
+          <div class="noticeItemText"></div>
+          <div class="noticeItemTime">${fmtAmPm(it.ts)}</div>
+        </div>
+      `;
+      row.querySelector('.noticeItemText').textContent = it.text;
+      list.appendChild(row);
+    });
+  }
+  
+// v6.3.2: 알림 효과(단색 테두리 1바퀴 + 상단 5초 라인)
+let __noticeFxTimer = null;
+let __noticeSummaryTimer = null;
+function startNoticeFx(){
+  try{
+    const svg = document.getElementById('noticeStrokeSvg');
+    const prog = document.getElementById('noticeProgress');
+    if(svg){
+      svg.classList.remove('ringOn');
+      void svg.offsetWidth; // restart
+      svg.classList.add('ringOn');
+      // ring fades shortly after
+      setTimeout(()=>{ try{ svg.classList.remove('ringOn'); }catch(e){} }, 900);
+    }
+    if(prog){
+      prog.classList.remove('progressOn');
+      void prog.offsetWidth;
+      prog.classList.add('progressOn');
+      clearTimeout(__noticeFxTimer);
+      __noticeFxTimer = setTimeout(()=>{ try{ prog.classList.remove('progressOn'); }catch(e){} }, 5200);
+    }
+  }catch(e){}
+}
+
+function pushNotice(text){
+    const t = (text ?? '').toString().trim();
+    if(!t) return;
+    const arr = loadNotices();
+    const item = {id: String(Date.now()) + '_' + Math.random().toString(16).slice(2), text: t, ts: Date.now()};
+    arr.unshift(item);
+    saveNotices(arr);
+    setTopNotice(item);
+    renderNoticeList();
+
+    // Edge lighting + auto hide after 5 seconds (UI only)
+    const edge = document.getElementById('noticeEdge');
+    if(edge){
+      edge.classList.add('on');
+      clearTimeout(window.__edgeTimer);
+      window.__edgeTimer = setTimeout(()=> edge.classList.remove('on'), 5000);
+    }
+    clearTimeout(window.__noticeAutoHideTimer);
+    window.__noticeAutoHideTimer = setTimeout(()=>{
+      // v6.3.1: 5초 후에는 알림를 지우지 않고(최신 알림 유지), 효과만 종료합니다.
+      const edge = document.getElementById('noticeEdge');
+      if(edge) edge.classList.remove('on');
+    }, 5000);
+  }
+  function deleteNoticesByIds(ids){
+    const set = new Set(ids);
+    const arr = loadNotices().filter(it => !set.has(it.id));
+    saveNotices(arr);
+    setTopNotice(arr[0] || null);
+    if(!(arr && arr.length)) /* v6.3.2: 최신 알림 유지 */
+renderNoticeList();
+  }
+  function deleteTopNotice(){
+    const arr = loadNotices();
+    if(arr.length === 0) return;
+    deleteNoticesByIds([arr[0].id]);
+  }
+  function autoClearOldNotices(){
+    const sw = document.getElementById('noticeAutoClear');
+    const on = sw ? sw.checked : false;
+    if(!on) return;
+    const cutoff = Date.now() - 3*60*1000;
+    const arr = loadNotices();
+    const keep = arr.filter(it => it.ts >= cutoff);
+    if(keep.length !== arr.length){
+      saveNotices(keep);
+      setTopNotice(keep[0] || null);
+      renderNoticeList();
+    }
+  }
+  function openNoticePanel(){
+    const p = document.getElementById('noticePanel');
+    if(!p) return;
+    p.setAttribute('aria-hidden','false');
+    renderNoticeList();
+  }
+  function closeNoticePanel(){
+    const p = document.getElementById('noticePanel');
+    if(!p) return;
+    p.setAttribute('aria-hidden','true');
+  }
+  function toggleNoticePanel(){
+    const p = document.getElementById('noticePanel');
+    if(!p) return;
+    const open = p.getAttribute('aria-hidden') === 'false';
+    (open ? closeNoticePanel : openNoticePanel)();
+  }
+
+  // Public: use this for all important messages
+  function announce(msg){ pushNotice(msg); }
+
+  window.addEventListener('load', ()=>{
+    const sw = document.getElementById('noticeAutoClear');
+    if(sw){
+      const saved = (localStorage.getItem(NOTICE_AUTOCLEAR_KEY) || '0');
+      sw.checked = (saved === '1');
+      sw.addEventListener('change', ()=>{
+        try{ localStorage.setItem(NOTICE_AUTOCLEAR_KEY, sw.checked ? '1' : '0'); }catch(e){}
+        autoClearOldNotices();
+      });
+    }
+    const arr = loadNotices();
+    setTopNotice(arr[0] || null);
+
+    const btn = document.getElementById('noticeDropBtn');
+    if(btn) btn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleNoticePanel(); });
+
+    const delBtn = document.getElementById('noticeDelBtn');
+    if(delBtn) delBtn.addEventListener('click', (e)=>{ e.stopPropagation(); deleteTopNotice(); });
+
+    document.addEventListener('click', (e)=>{
+      const p = document.getElementById('noticePanel');
+      const bar = document.getElementById('noticeBar');
+      if(!p || !bar) return;
+      if(p.getAttribute('aria-hidden') === 'false' && !bar.contains(e.target)){
+        closeNoticePanel();
+      }
+    });
+
+    const clearBtn = document.getElementById('noticeClearBtn');
+    if(clearBtn){
+      clearBtn.addEventListener('click', ()=>{
+        const picks = Array.from(document.querySelectorAll('.noticePick'))
+          .filter(cb=>cb.checked)
+          .map(cb=>cb.getAttribute('data-id'));
+        const arr = loadNotices();
+
+        // v6.3.1: '전체'를 선택한 경우 -> 즉시 전체 삭제
+        if(picks.includes('__ALL__')){
+          deleteNoticesByIds(arr.map(x=>x.id));
+          /* 삭제 알림은 표시하지 않습니다. */
+          return;
+        }
+
+        if(picks.length === 0){
+          // 기존 동작 유지(실수 방지용)
+          if(window.__noticeClearArmed){
+            window.__noticeClearArmed = false;
+            deleteNoticesByIds(arr.map(x=>x.id));
+            /* 삭제 알림은 표시하지 않습니다. */
+          }else{
+            window.__noticeClearArmed = true;
+            pushNotice('전체 삭제를 원하시면 한 번 더 눌러 주세요.');
+            setTimeout(()=> window.__noticeClearArmed = false, 2000);
+          }
+          return;
+        }
+        deleteNoticesByIds(picks);
+        pushNotice('선택하신 알림가 삭제되었습니다.');
+      });
+    }
+
+    setInterval(autoClearOldNotices, 15000);
+
+    // ===== HARD BRIDGE: stop old top toast, store to notice instead =====
+    try{
+      // Remove any existing toast element (if present) to prevent overlay.
+      const oldToast = document.getElementById('toast') || document.getElementById('toastHost');
+      if(oldToast) oldToast.remove();
+
+      // Override toast() used by the app
+      window.toast = function(message){
+        pushNotice(String(message));
+      };
+
+      // Override alert-like notifier if any
+      window.notify = function(message){
+        pushNotice(String(message));
+      };
+    }catch(e){}
+  });
+</script>
+
+  <!-- ===== Color Wheel + Brightness Modal (v6.1.1) ===== -->
+  <div class="modal" id="colorWheelModal" aria-hidden="true">
+    <div class="backdrop" data-close="colorWheelModal"></div>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="colorWheelTitle">
+      <div class="dlgHead">
+        <div>
+          <div class="dlgTitle" id="colorWheelTitle">색상을 선택해 주세요.</div>
+          <div class="dlgSub">원판에서 색을 고르고, 오른쪽에서 밝기를 조절해 주세요.</div>
+        </div>
+        <button class="btn ghost sm" data-close="colorWheelModal">닫기</button>
+      </div>
+      <div class="dlgBody">
+        <div class="colorGrid">
+          <div class="wheelWrap">
+            <canvas id="cwCanvas" width="260" height="260"></canvas>
+            <div class="wheelKnob" id="cwKnob"></div>
+          </div>
+          <div class="brightWrap">
+            <div class="brightLabel">밝기</div>
+            <div class="brightTrack" id="cwBrightTrack">
+              <div class="brightBar" id="cwBrightBar"></div>
+              <div class="brightKnob" id="cwBrightKnob"></div>
+              <input id="cwBright" type="range" min="0" max="100" value="100" aria-label="밝기 조절" />
+            </div>
+
+            <div class="preview">
+              <div class="swatch" id="cwSwatch"></div>
+              <div class="hexRow">
+                <span class="mono" id="cwHex">#2F67FF</span>
+                <button class="btn ghost sm" id="cwCopy">복사</button>
+              </div>
+              <div class="hint" style="margin-top:6px">선택하신 색상은 전체 테마 포인트 색으로 적용됩니다.</div>
+            </div>
+
+            <div class="dlgActions">
+              <button class="btn" id="cwApply">적용</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="toast" aria-live="polite"></div>
+
+
+
+
+
+
+
+<script>
+/* v6.3.8: (1) 상단 X=전체삭제 (2) 최신 알림 시간 고정(오전/오후 h:mm) (3) 2문장 알림은 반드시 줄바꿈 (4) +/NaN 시간 방지 */
+(() => {
+  const FX_MS = 5000;
+  let summaryTimer = null;
+  let barAnim = null;
+  let glowTimer = null;
+  let initialShown = false;
+
+  function fmtApTime(d){
+    let h=d.getHours(), m=d.getMinutes();
+    const ap = h<12 ? '오전' : '오후';
+    h = h%12; if(h===0) h=12;
+    return `${ap} ${h}:${String(m).padStart(2,'0')}`;
+  }
+
+  function normalizeTwoLine(msg){
+    const s = String(msg ?? '').trim();
+    if(!s) return '';
+    // 이미 줄바꿈 있으면 유지
+    if(s.includes('\n')) return s;
+    // 마침표/물음표/느낌표 뒤에 줄바꿈 강제(첫 문장만)
+    const m = s.match(/^(.+?[\.!?])\s*(.+)$/);
+    if(m) return `${m[1]}\n${m[2]}`;
+    return s;
+  }
+
+  function loadArr(){
+    try{
+      if(typeof window.loadNotices === 'function'){
+        const a = window.loadNotices();
+        return Array.isArray(a) ? a : [];
+      }
+    }catch(e){}
+    try{
+      const a = JSON.parse(localStorage.getItem('studyTimer_notices') || "[]");
+      return Array.isArray(a) ? a : [];
+    }catch(e){}
+    return [];
+  }
+
+  function saveArr(a){
+    try{
+      if(typeof window.saveNotices === 'function'){ window.saveNotices(a); return; }
+    }catch(e){}
+    try{ localStorage.setItem('studyTimer_notices', JSON.stringify(a||[])); }catch(e){}
+  }
+
+  function latestTimeStr(arr){
+    if(!arr || !arr.length) return '';
+    const last = arr[0];
+    const ts = last && last.ts ? new Date(last.ts) : null;
+    if(ts && !isNaN(ts.getTime())) return fmtApTime(ts);
+    if(last && typeof last.timeStr === 'string' && last.timeStr.trim() && !/NaN/.test(last.timeStr)) return last.timeStr.trim();
+    return fmtApTime(new Date());
+  }
+
+  function setTop(text, timeStr){
+    const t = document.getElementById('noticeText');
+    const meta = document.getElementById('noticeMeta');
+    const timeEl = document.getElementById('noticeTime');
+    if(!t) return;
+
+    const has = !!(text && String(text).trim());
+    t.textContent = normalizeTwoLine(text);
+
+    if(meta && timeEl){
+      const goodTime = (timeStr||'').trim();
+      if(goodTime && !/NaN/.test(goodTime)){
+        meta.style.display = '';
+        timeEl.textContent = goodTime;
+      }else{
+        // 시간/버튼 숨김(알림 없을 때)
+        meta.style.display = 'none';
+        timeEl.textContent = '';
+      }
+    }
+  }
+
+  function setInitial(){
+    setTop('알림은 여기서 표시됩니다.', '');
+    initialShown = true;
+  }
+
+  function setZero(){
+    setTop('알림이 0개입니다.\n현재 온 알림이 없습니다.', '');
+    initialShown = true;
+  }
+
+  function updateSummary(keepWhenNoNew=false){
+    const arr = loadArr();
+    if(arr.length === 0){
+      if(!initialShown) setInitial();
+      else setZero();
+      return;
+    }
+    // 알림창(리스트)에서 일부 삭제해도 '알림 n개' 유지하도록 옵션
+    const timeStr = latestTimeStr(arr);
+    setTop(`알림이 ${arr.length}개 왔습니다.`, timeStr);
+  }
+
+  function startFx(){
+    const progBox = document.getElementById('noticeProgress');
+    const span = progBox ? progBox.querySelector('span') : null;
+    if(progBox && span){
+      if(barAnim){ try{ barAnim.cancel(); }catch(e){} barAnim = null; }
+      if(summaryTimer){ clearTimeout(summaryTimer); summaryTimer=null; }
+      progBox.style.opacity='1';
+      span.style.transformOrigin='right center'; // 오른쪽 고정, 오->좌로 줄어듦
+      span.style.transform='scaleX(1)';
+      barAnim = span.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:FX_MS,easing:'linear',iterations:1});
+      barAnim.onfinish = () => { try{ progBox.style.opacity='0'; }catch(e){} };
+      summaryTimer = setTimeout(()=>{ updateSummary(); }, FX_MS);
+    }
+
+    // 글로우 5초 유지(중복 꼬임 방지)
+    const glow = document.getElementById('noticeGlow');
+    if(glow){
+      glow.style.opacity='1';
+      if(glowTimer) clearTimeout(glowTimer);
+      glowTimer = setTimeout(()=>{ glow.style.opacity='0'; }, FX_MS);
+    }
+  }
+
+  // 전체삭제
+  function clearAll(){
+    try{
+      if(typeof window.deleteNoticesByIds === 'function'){
+        const arr = loadArr();
+        window.deleteNoticesByIds(arr.map(x=>x.id));
+      }else{
+        saveArr([]);
+      }
+    }catch(e){
+      try{ saveArr([]); }catch(_){}
+    }
+    setZero();
+    try{ if(typeof window.renderNoticeList === 'function') window.renderNoticeList(); }catch(e){}
+  }
+
+  // 상단 X(#noticeDelBtn)를 전체삭제로 강제(기존 리스너보다 먼저, 그리고 완전 차단)
+  function hijackTopX(){
+    const btn = document.getElementById('noticeDelBtn');
+    if(!btn || btn.__hijacked638) return;
+    btn.__hijacked638 = true;
+    btn.title = '전체 알림 삭제';
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+      clearAll();
+    }, true);
+  }
+
+  // 삭제 기능이 '삭제되었습니다' 같은 알림을 만들면 차단
+  function suppressDeleteNotices(){
+    const orig = window.pushNotice;
+    if(typeof orig !== 'function' || window.__pushWrapped638) return;
+    window.pushNotice = function(msg){
+      const s = (typeof msg === 'string') ? msg : (msg && msg.text ? String(msg.text) : '');
+      if(/삭제|지웠|초기화/.test(s)) return;
+      // timeStr/ts 보강
+      let r = orig.apply(this, arguments);
+      try{
+        const arr = loadArr();
+        if(arr.length){
+          const it = arr[0];
+          if(it && (!it.ts || isNaN(new Date(it.ts).getTime()))){
+            it.ts = Date.now();
+          }
+          if(it && (!it.timeStr || !String(it.timeStr).trim() || /NaN/.test(String(it.timeStr)))){
+            it.timeStr = fmtApTime(new Date(it.ts || Date.now()));
+          }
+          saveArr(arr);
+        }
+        // 바로 표시 + FX 리셋
+        const arr2 = loadArr();
+        if(arr2.length){
+          setTop(normalizeTwoLine(arr2[0].text || arr2[0].msg || s), latestTimeStr(arr2));
+        }
+        startFx();
+      }catch(e){}
+      return r;
+    };
+    window.__pushWrapped638 = true;
+  }
+
+  // 3분 경계 자동삭제: 알림창이 열려 있어도 즉시 반영
+  function boundaryPurge(){
+    const now = new Date();
+    if(now.getSeconds() !== 0) return;
+    if(now.getMinutes() % 3 !== 0) return;
+    const boundary = new Date(now); boundary.setMilliseconds(0);
+
+    const arr = loadArr();
+    if(!arr.length) return;
+
+    const keep = [];
+    for(const it of arr){
+      let d = null;
+      if(it && it.ts){ d = new Date(it.ts); if(isNaN(d.getTime())) d=null; }
+      if(!d){ keep.push(it); continue; }
+      if(d.getTime() >= boundary.getTime()) keep.push(it);
+    }
+    if(keep.length !== arr.length){
+      saveArr(keep);
+      try{ if(typeof window.renderNoticeList === 'function') window.renderNoticeList(); }catch(e){}
+      if(keep.length===0) setZero();
+      else setTop(`알림이 ${keep.length}개 왔습니다.`, latestTimeStr(keep));
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', ()=>{
+    hijackTopX();
+    suppressDeleteNotices();
+    updateSummary();
+    setInterval(boundaryPurge, 1000);
+  });
+})();
+</script>
+
+
+<script>
+// ===== Auto Update (GitHub Pages manifest) =====
+// 버전은 여기만 바꾸면 상단 v표시/업데이트 비교에 같이 반영돼요.
+const APP_VERSION = "6.3.16";
+const UPDATE_MANIFEST_URL = "https://happynuri-codefair.github.io/study-timer-update/manifest.json";
+
+(function initUpdateUI() {
+  function $(id) { return document.getElementById(id); }
+
+  const verEl = $("verLabel");
+  if (verEl) verEl.textContent = "v" + APP_VERSION;
+
+  const autoToggle = $("autoUpdateToggle");
+  if (autoToggle) {
+    autoToggle.checked = (localStorage.getItem("autoUpdate") === "on");
+    autoToggle.addEventListener("change", () => {
+      localStorage.setItem("autoUpdate", autoToggle.checked ? "on" : "off");
+      // 켰을 때 즉시 1회 확인
+      if (autoToggle.checked) checkForUpdate(true);
+    });
+  }
+
+  const btn = $("updateBtn");
+  if (btn) btn.addEventListener("click", () => checkForUpdate(false));
+
+  // 자동 업데이트: 1분마다 확인
+  setInterval(() => {
+    if (localStorage.getItem("autoUpdate") === "on") checkForUpdate(true);
+  }, 60 * 1000);
+})();
+
+async function checkForUpdate(auto = false) {
+  try {
+    const res = await fetch(UPDATE_MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+
+    const latest = (data && data.latest) ? String(data.latest).trim() : "";
+    const url = (data && data.url) ? String(data.url).trim() : "";
+    const notes = (data && data.notes) ? String(data.notes).trim() : "";
+
+    if (!latest) {
+      if (!auto) announce("업데이트 정보(manifest)가 비어 있습니다.");
+      return;
+    }
+
+    if (latest !== APP_VERSION) {
+      // 업데이트 알림: 클릭하면 새 버전 열기
+      const msg = `업데이트가 있습니다.
+현재: v${APP_VERSION}  →  최신: v${latest}` + (notes ? `
+
+${notes}` : "");
+      // 이 앱은 알림 시스템이 있으니 거기에 띄우고, 클릭 시 url 열기
+      if (typeof announce === "function") {
+        announce(msg);
+      } else {
+        alert(msg);
+      }
+      if (url) {
+        // 사용자가 바로 열고 싶을 때를 위해, 자동이 아니면 바로 열기 버튼 느낌으로 confirm
+        if (!auto) {
+          const ok = confirm("새 버전을 새 탭에서 열까요?");
+          if (ok) window.open(url, "_blank");
+        }
+      }
+    } else {
+      if (!auto) announce("현재 최신 버전입니다.");
+    }
+  } catch (e) {
+    if (!auto) announce("업데이트 확인에 실패했습니다.
+" + (e && e.message ? e.message : ""));
+  }
+}
+</script>
+
+</body>
+</html>
