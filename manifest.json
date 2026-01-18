@@ -1,5 +1,5 @@
 {
-  "latest": "6.3.16",
+  "latest": "6.3.17",
   "url": "https://happynuri-codefair.github.io/study-timer-update/study_timer_latest.html",
-  "notes": "알림 안정화 및 라이브 저장 링 개선"
+  "notes": "알림 삭제 안정화 및 UI 정리"
 }
