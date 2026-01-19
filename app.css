@@ -244,11 +244,13 @@
     }
     .countbadge .ring-fg{
       fill: none;
-      stroke: var(--accent);
+      /* 링은 기본 테마색보다 조금 더 진하게 (약 25% 어둡게) */
+      stroke: color-mix(in srgb, var(--accent) 75%, #000);
       stroke-width: 4;
       stroke-linecap: round;
-      stroke-dasharray: 40 224; /* 2*pi*16 */
-      stroke-dashoffset: 0;
+      /* SVG 원 둘레(2πr)와 맞춰야 360도 정확히 돎 (r=16 -> 약 100.53) */
+      stroke-dasharray: 100.53 100.53;
+      stroke-dashoffset: 100.53;
       transition: stroke-dashoffset .2s linear;
     }
     .countbadge .ring-num{
