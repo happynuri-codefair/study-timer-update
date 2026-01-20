@@ -1,10 +1,19 @@
 <!doctype html>
 <html lang="ko">
-
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>공부 타이머</title>
+  <link rel="stylesheet" href="app.css" />
+  <script>
+    // app version for updater
+    window.APP_VERSION = "6.3.16";
+  </script>
+  <script defer src="app.js"></script>
 </head>
 <body>
 
-<div class="banner" id="banner"></div>
+  <div class="banner" id="banner"></div>
 
   <div class="topbar">
     <div class="brand">
@@ -16,7 +25,6 @@
     </div>
 
     <div class="row end">
-
       <span id="verLabel" class="small" style="font-weight:900;">v6.3.16</span>
       <button class="btn" id="updateBtn" type="button">업데이트</button>
       <div class="pill">
@@ -26,7 +34,10 @@
           <span class="track"><span class="thumb"></span></span>
         </label>
       </div>
-<!-- ===== Notice bar (v6.1.8) ===== -->
+
+      
+    
+    <!-- ===== Notice bar (v6.1.8) ===== -->
     <div class="noticeBar" id="noticeBar" aria-label="알림">
       <div class="noticeEdge" id="noticeEdge" aria-hidden="true"></div>
       <div class="noticeProgress" id="noticeProgress" aria-hidden="true"><span></span></div>
@@ -57,13 +68,13 @@
               </label>
             </div>
             <button class="btn ghost sm" id="noticeClearBtn">지우기</button>
-            <button class="btn" id="manualHtmlUpdateBtn" title="새 HTML을 붙여넣어 이 페이지를 교체합니다.">수동 HTML 업데이트</button>
           </div>
         </div>
         <div class="noticeList" id="noticeList"></div>
         <div class="panelFoot">자동 지우기를 켜시면 3분이 지난 알림는 자동으로 삭제됩니다.</div>
       </div>
     </div>
+
 
 <div class="pill">
         <span class="hint">현재 시각</span>
@@ -78,6 +89,8 @@
         </label>
         <span class="hint" id="modeLabel">Light</span>
       </div>
+
+      
 
       <div class="pill" title="PC/모바일 화면 배치를 전환합니다.">
         <span class="hint">화면</span>
@@ -123,6 +136,7 @@
               </div>
             </div>
 
+            
             <button class="btn" id="manualSaveBtn">수동 저장</button>
           </div>
         </div>
@@ -497,104 +511,6 @@
     </div>
   </div>
 
-  <!-- ===== Color Wheel + Brightness Modal (v6.1.1) ===== -->
-  <div class="modal" id="colorWheelModal" aria-hidden="true">
-    <div class="backdrop" data-close="colorWheelModal"></div>
-    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="colorWheelTitle">
-      <div class="dlgHead">
-        <div>
-          <div class="dlgTitle" id="colorWheelTitle">색상을 선택해 주세요.</div>
-          <div class="dlgSub">원판에서 색을 고르고, 오른쪽에서 밝기를 조절해 주세요.</div>
-        </div>
-        <button class="btn ghost sm" data-close="colorWheelModal">닫기</button>
-      </div>
-      <div class="dlgBody">
-        <div class="colorGrid">
-          <div class="wheelWrap">
-            <canvas id="cwCanvas" width="260" height="260"></canvas>
-            <div class="wheelKnob" id="cwKnob"></div>
-          </div>
-          <div class="brightWrap">
-            <div class="brightLabel">밝기</div>
-            <div class="brightTrack" id="cwBrightTrack">
-              <div class="brightBar" id="cwBrightBar"></div>
-              <div class="brightKnob" id="cwBrightKnob"></div>
-              <input id="cwBright" type="range" min="0" max="100" value="100" aria-label="밝기 조절" />
-            </div>
 
-            <div class="preview">
-              <div class="swatch" id="cwSwatch"></div>
-              <div class="hexRow">
-                <span class="mono" id="cwHex">#2F67FF</span>
-                <button class="btn ghost sm" id="cwCopy">복사</button>
-              </div>
-              <div class="hint" style="margin-top:6px">선택하신 색상은 전체 테마 포인트 색으로 적용됩니다.</div>
-            </div>
-
-            <div class="dlgActions">
-              <button class="btn" id="cwApply">적용</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast" aria-live="polite"></div>
-
-  <!-- ===== Paste Update Modal ===== -->
-  <div id="pasteUpdateModal" class="pasteUpdateModal" aria-hidden="true" style="display:none;">
-    <div class="pasteUpdateBackdrop"></div>
-    <div class="pasteUpdateCard" role="dialog" aria-modal="true" aria-labelledby="pasteUpdateTitle">
-      <div class="pasteUpdateHead">
-        <div>
-          <div id="pasteUpdateTitle" class="pasteUpdateTitle">업데이트 (HTML 붙여넣기)</div>
-          <div class="pasteUpdateSub">새 버전 HTML 전체를 붙여넣고 <b>적용</b>을 누르면, 이 기기에서 바로 새 버전으로 실행돼요.</div>
-        </div>
-        <button type="button" class="pasteUpdateClose" id="pasteUpdateClose" aria-label="닫기">×</button>
-      </div>
-
-      <div class="pasteUpdateBody">
-        <textarea id="pasteUpdateTextarea" class="pasteUpdateTextarea" spellcheck="false" placeholder="여기에 새 HTML 전체를 붙여넣기"></textarea>
-        <div class="pasteUpdateHint">
-          • 붙여넣은 HTML은 <b>이 브라우저/기기</b>에 저장됩니다(로컬 저장소).
-
-          • 문제가 생기면 아래 <b>업데이트 초기화</b>로 바로 되돌릴 수 있어요.
-        </div>
-      </div>
-
-      <div class="pasteUpdateFooter">
-        <button type="button" class="btn" id="pasteUpdateReset">업데이트 초기화</button>
-        <div class="pasteUpdateRight">
-          <button type="button" class="btn" id="pasteUpdateCancel">취소</button>
-          <button type="button" class="btn primary" id="pasteUpdateApply">적용</button>
-        </div>
-      </div>
-
-      <div id="pasteUpdateMsg" class="pasteUpdateMsg" style="display:none;"></div>
-    </div>
-  </div>
-
-<!-- Modal: Manual HTML update (paste) -->
-<div class="modalback" id="htmlUpdateBack" style="display:none">
-  <div class="modal" style="width:min(920px,100%)">
-    <button class="btn close" id="htmlUpdateClose">닫기</button>
-    <h3>수동 HTML 업데이트</h3>
-    <div class="small">
-      아래에 <b>새 HTML 전체</b>를 붙여넣고 적용을 누르면, 이 기기에서는 그 HTML로 페이지가 교체됩니다(로컬 저장).
-      GitHub에 올리는 업데이트와는 별개예요.
-    </div>
-    <div class="divider"></div>
-    <div class="label">새 HTML 붙여넣기</div>
-    <textarea class="input" id="htmlUpdateTextarea" style="height:260px; font-family:var(--mono); resize:vertical" placeholder="여기에 새 HTML 전체를 붙여넣으세요."></textarea>
-    <div style="height:12px"></div>
-    <div class="row end" style="gap:8px">
-      <button class="btn danger" id="htmlUpdateClear">로컬 업데이트 제거</button>
-      <button class="btn" id="htmlUpdateApply">적용</button>
-    </div>
-  </div>
-</div>
-
-  <script src="app.js" defer></script>
 </body>
 </html>
