@@ -1,33 +1,6 @@
-
-  (function(){
-    try{
-      const KEY = 'STUDY_TIMER_OVERRIDE_HTML';
-      const hasNo = new URLSearchParams(location.search).has('nooverride');
-      const override = localStorage.getItem(KEY);
-      if (!hasNo && override && !sessionStorage.getItem('STUDY_TIMER__OVERRIDE_LOADED')){
-        sessionStorage.setItem('STUDY_TIMER__OVERRIDE_LOADED','1');
-        document.open();
-        document.write(override);
-        document.close();
-      }
-    }catch(e){}
-  })();
-
-
-// ===== Manual HTML Override Loader (v1) =====
-(() => {
-  try{
-    const key = 'ST_OVERRIDE_HTML';
-    const raw = localStorage.getItem(key);
-    if(raw && raw.trim().startsWith('<!')){
-      document.open();
-      document.write(raw);
-      document.close();
-    }
-  }catch(e){}
-})();
-
-
+// Study Timer app.js (safe)
+const APP_VERSION='6.3.17';
+(function(){try{var q=new URLSearchParams(location.search);if(q.has('clearoverride')){localStorage.removeItem('STUDY_TIMER_OVERRIDE_HTML');localStorage.removeItem('ST_OVERRIDE_HTML');sessionStorage.removeItem('STUDY_TIMER__OVERRIDE_LOADED');}}catch(e){}})();
 (() => {
   const LS = {
     MODE: 'st_mode',
