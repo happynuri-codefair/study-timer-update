@@ -2176,8 +2176,7 @@ renderNoticeList();
 
 // ===== Auto Update (GitHub Pages manifest) =====
 // 버전은 여기만 바꾸면 상단 v표시/업데이트 비교에 같이 반영돼요.
-// 현재 앱 버전 (manifest.json의 latest와 비교)
-window.APP_VERSION = "6.3.16";
+const APP_VERSION = "6.3.16";
 const UPDATE_MANIFEST_URL = "https://happynuri-codefair.github.io/study-timer-update/manifest.json";
 
 (function initUpdateUI() {
@@ -2250,8 +2249,7 @@ ${notes}` : "");
 
 
 // ===== Paste-update feature =====
-  // 수동 HTML 붙여넣기(로컬 오버라이드) 저장 키
-  const PASTE_UPDATE_KEY = 'ST_OVERRIDE_HTML';
+const PASTE_UPDATE_KEY = 'STUDY_TIMER_OVERRIDE_HTML';
 
 function openPasteUpdateModal(){
   const m = document.getElementById('pasteUpdateModal');
@@ -2335,7 +2333,7 @@ function resetPastedUpdate(){
 // ===== Update check (manifest.json) + UI reactions (v1) =====
 (() => {
   // ---- Configure ----
-  const APP_VERSION = window.APP_VERSION || "0.0.0";
+  const APP_VERSION = "6.3.16";
   const MANIFEST_URL = "https://happynuri-codefair.github.io/study-timer-update/manifest.json";
   const STORE_KEY = "ST_AUTO_UPDATE_CHECK";
 
@@ -2485,46 +2483,11 @@ function resetPastedUpdate(){
     });
   }
 
-  function hookDownloadButton(){
-    const btn = document.getElementById("downloadBtn");
-    if(!btn) return;
-    btn.addEventListener("click", async ()=>{
-      try{
-        safeNotice("HTML 파일을 만드는 중…");
-        const bust = "?t=" + Date.now();
-        const [html, css, js] = await Promise.all([
-          fetch("index.html" + bust, {cache:"no-store"}).then(r=>r.text()),
-          fetch("app.css" + bust, {cache:"no-store"}).then(r=>r.text()),
-          fetch("app.js" + bust, {cache:"no-store"}).then(r=>r.text()),
-        ]);
-
-        // index.html 안의 외부 참조를 인라인으로 바꾸기
-        let out = html;
-        out = out.replace(/<link[^>]*href=["']app\.css["'][^>]*>/i, `<style>\n${css}\n</style>`);
-        out = out.replace(/<script[^>]*src=["']app\.js["'][^>]*><\/script>/i, `<script>\n${js}\n<\/script>`);
-
-        const blob = new Blob([out], {type:"text/html;charset=utf-8"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `study_timer_offline_v${APP_VERSION}.html`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url), 5000);
-        safeNotice("다운로드를 시작했습니다.");
-      }catch(e){
-        safeModal("다운로드 실패", "이 기능은 GitHub Pages(https)에서 더 잘 동작합니다.\n그래도 안 되면 브라우저 다운로드 권한을 확인해줘.");
-      }
-    });
-  }
-
   window.addEventListener("load", async () => {
     setVersionLabel();
     initAutoToggle();
     hookUpdateButton();
     hookManualHtmlUpdate();
-    hookDownloadButton();
 
     const auto = document.getElementById("autoUpdateToggle");
     const on = auto ? auto.checked : true;
