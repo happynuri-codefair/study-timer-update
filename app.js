@@ -1,5 +1,77 @@
 // Study Timer app.js (safe)
 const APP_VERSION='6.3.17';
+
+// ---- Boot safety: clear old Service Worker / Cache that can freeze updates ----
+(function(){
+  try{
+    const q = new URLSearchParams(location.search||'');
+    const doClean = q.has('hardrefresh') || q.has('clearsw') || localStorage.getItem('ST_FORCE_SW_CLEAN')==='1';
+    if(!doClean) return;
+    localStorage.removeItem('ST_FORCE_SW_CLEAN');
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+    }
+    if(window.caches && caches.keys){
+      caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
+    }
+  }catch(e){}
+})();
+
+// ---- Boot watchdog: if init doesn't finish, show recovery actions ----
+setTimeout(()=>{
+  try{
+    if(window.__ST_BOOT_OK__) return;
+    const b=document.getElementById('banner');
+    if(!b) return;
+    b.innerHTML = '';
+    b.style.display='block';
+    b.style.padding='10px 12px';
+    b.style.borderRadius='12px';
+    b.style.margin='10px';
+    b.style.background='rgba(255,205,66,0.25)';
+    b.style.border='1px solid rgba(255,205,66,0.6)';
+    b.style.color='#2b2b2b';
+    const msg=document.createElement('div');
+    msg.textContent='⚠️ 화면이 멈춘 것 같아요. 아래 버튼으로 복구를 시도해줘.';
+    msg.style.fontWeight='800';
+    msg.style.marginBottom='8px';
+    const row=document.createElement('div');
+    row.style.display='flex';
+    row.style.gap='8px';
+    row.style.flexWrap='wrap';
+    function mkBtn(text, onClick){
+      const bt=document.createElement('button');
+      bt.type='button';
+      bt.textContent=text;
+      bt.style.padding='8px 10px';
+      bt.style.borderRadius='10px';
+      bt.style.border='1px solid rgba(0,0,0,0.15)';
+      bt.style.background='#fff';
+      bt.style.cursor='pointer';
+      bt.onclick=onClick;
+      return bt;
+    }
+    row.appendChild(mkBtn('저장 초기화(권장)', ()=>{
+      try{
+        const ok=confirm('저장된 설정/기록을 초기화할까? (되돌릴 수 없음)');
+        if(!ok) return;
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload();
+      }catch(e){}
+    }));
+    row.appendChild(mkBtn('강력 새로고침(캐시/서비스워커)', ()=>{
+      try{
+        localStorage.setItem('ST_FORCE_SW_CLEAN','1');
+        const u=new URL(location.href);
+        u.searchParams.set('hardrefresh','1');
+        location.href=u.toString();
+      }catch(e){ location.reload(); }
+    }));
+    b.appendChild(msg);
+    b.appendChild(row);
+  }catch(e){}
+}, 1800);
 (function(){try{var q=new URLSearchParams(location.search);if(q.has('clearoverride')){localStorage.removeItem('STUDY_TIMER_OVERRIDE_HTML');localStorage.removeItem('ST_OVERRIDE_HTML');sessionStorage.removeItem('STUDY_TIMER__OVERRIDE_LOADED');}}catch(e){}})();
 (() => {
   const LS = {
@@ -2466,4 +2538,6 @@ function resetPastedUpdate(){
     const on = auto ? auto.checked : true;
     if(on) await checkForUpdates({quiet:true});
   });
+
+  window.__ST_BOOT_OK__ = true;
 })();
