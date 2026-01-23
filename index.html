@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>공부 타이머</title>
+  <link rel="stylesheet" href="app.css?v=6.3.17" />
+  <script>
+    // app version for updater
+    window.APP_VERSION = "6.3.17";
+  </script>
+  <script defer src="app.js?v=6.3.17"></script>
+</head>
+<body>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">ST</div>
+      <div>
+        <div class="title">공부 타이머</div>
+        <div class="sub">기록 · 예약 · 통계 · 페이지/문제 측정</div>
+      </div>
+    </div>
+
+    <div class="row end">
+      <span id="verLabel" class="small" style="font-weight:900;">v6.3.17</span>
+      <button class="btn" id="updateBtn" type="button">업데이트</button>
+      <div class="pill">
+        <span class="hint">자동</span>
+        <label class="switch">
+          <input type="checkbox" id="autoUpdateToggle" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      
+    
+    <!-- ===== Notice bar (v6.1.8) ===== -->
+    <div class="noticeBar" id="noticeBar" aria-label="알림">
+      <div class="noticeEdge" id="noticeEdge" aria-hidden="true"></div>
+      <div class="noticeProgress" id="noticeProgress" aria-hidden="true"><span></span></div>
+      <div class="noticeGlow" id="noticeGlow" aria-hidden="true"></div>
+      <svg id="noticeStrokeSvg" class="noticeStrokeSvg" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="2" y="2" width="96" height="36" rx="10" ry="10" />
+      </svg>
+
+      <div class="noticeMain" id="noticeMain">
+        <div class="noticeText" id="noticeText">알림은 여기서 표시됩니다.</div>
+
+        <div class="noticeMeta" id="noticeMeta" style="display:none">
+          <span class="noticeTime" id="noticeTime"></span>
+          <button class="btn ghost sm noticeDelBtn" id="noticeDelBtn" title="현재 알림 삭제">✕</button>
+          <button class="btn ghost sm noticeDropBtn" id="noticeDropBtn" title="이전 알림 보기">▾</button>
+        </div>
+      </div>
+
+      <div class="noticePanel" id="noticePanel" aria-hidden="true">
+        <div class="panelHead">
+          <div class="panelTitle">알림 목록</div>
+          <div class="panelControls">
+            <div class="pill mini">
+              <span class="hint">자동 지우기</span>
+              <label class="switch" style="margin-left:6px">
+                <input id="noticeAutoClear" type="checkbox" />
+                <span class="track"><span class="thumb"></span></span>
+              </label>
+            </div>
+            <button class="btn ghost sm" id="noticeClearBtn">지우기</button>
+          </div>
+        </div>
+        <div class="noticeList" id="noticeList"></div>
+        <div class="panelFoot">자동 지우기를 켜시면 3분이 지난 알림는 자동으로 삭제됩니다.</div>
+      </div>
+    </div>
+
+
+<div class="pill">
+        <span class="hint">현재 시각</span>
+        <span class="now" id="nowClock">-</span>
+      </div>
+
+      <div class="pill" title="라이트/다크 테마를 전환합니다.">
+        <span class="hint">테마</span>
+        <label class="switch">
+          <input id="modeToggle" type="checkbox" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+        <span class="hint" id="modeLabel">Light</span>
+      </div>
+
+      
+
+      <div class="pill" title="PC/모바일 화면 배치를 전환합니다.">
+        <span class="hint">화면</span>
+        <label class="switch" style="margin-left:6px">
+          <input id="layoutToggle" type="checkbox" />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+        <span class="hint" id="layoutLabel">PC</span>
+      </div>
+<div class="pill" title="색상 테마(팔레트)를 선택하고 관리합니다.">
+        <span class="hint">색상</span>
+        <select id="paletteSelect" style="min-width:170px"></select>
+
+      <div class="pill">
+        <span class="hint">색상</span>
+        <button class="btn ghost sm" id="openColorWheelBtn" title="원판으로 색상을 선택합니다.">원판</button>
+      </div>
+        <button class="btn" id="paletteManageBtn">추가/변경</button>
+      </div>
+
+      <button class="btn danger" id="exitBtn">종료</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <main class="main">
+      <div class="card">
+        <div class="section-title">
+          <h2>타이머</h2>
+          <div class="row">
+            <div class="countwrap">
+              <span class="hint">라이브 저장</span>
+              <label class="switch">
+                <input id="liveSaveToggle" type="checkbox" checked />
+                <span class="track"><span class="thumb"></span></span>
+              </label>
+              <div class="countbadge" id="liveBadge" title="5초마다 저장합니다.">
+                <svg class="ring" viewBox="0 0 40 40" aria-hidden="true">
+                  <circle class="ring-bg" cx="20" cy="20" r="16"></circle>
+                  <circle class="ring-fg" cx="20" cy="20" r="16"></circle>
+                </svg>
+                <span class="ring-num" id="liveNum">5</span>
+              </div>
+            </div>
+
+            
+            <button class="btn" id="manualSaveBtn">수동 저장</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="label">제목</div>
+            <input class="input" id="titleInput" placeholder="예: [수학] 이차함수" />
+          </div>
+          <div>
+            <div class="label">문제집 선택</div>
+            <div class="row" style="gap:8px">
+              <select id="workbookSelect" style="flex:1"></select>
+              <button class="btn" id="workbookManageBtn">등록/관리</button>
+            </div>
+            <div class="small" id="workbookHint">문제집을 선택하시면 페이지/문제 입력 검증에 사용됩니다.</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="tabs" role="tablist">
+          <div class="tab active" id="tabStopwatch">스톱워치</div>
+          <div class="tab" id="tabTimer">타이머</div>
+        </div>
+
+        <div class="timer" id="timeDisplay">00:00:00.00</div>
+
+        <div class="grid3" id="timerInputs">
+          <div>
+            <div class="label">시간</div>
+            <input class="input" id="inH" inputmode="numeric" placeholder="0" />
+          </div>
+          <div>
+            <div class="label">분</div>
+            <input class="input" id="inM" inputmode="numeric" placeholder="0" />
+          </div>
+          <div>
+            <div class="label">초</div>
+            <input class="input" id="inS" inputmode="numeric" placeholder="0" />
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="grid2">
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">페이지 측정</div>
+              <div class="small">시작/끝 페이지로 분당 페이지를 계산합니다.</div>
+            </div>
+            <label class="switch">
+              <input id="pageToggle" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </label>
+          </div>
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">문제수 측정</div>
+              <div class="small">시작/끝 문제번호 또는 직접 입력을 사용합니다.</div>
+            </div>
+            <label class="switch">
+              <input id="probToggle" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="grid2" id="pageArea" class="hide">
+          <div>
+            <div class="label">시작 페이지</div>
+            <input class="input" id="pageStart" inputmode="numeric" placeholder="예: 12" />
+          </div>
+          <div>
+            <div class="label">끝 페이지</div>
+            <input class="input" id="pageEnd" inputmode="numeric" placeholder="예: 20" />
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div id="probArea" class="hide">
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">문제 입력 방식</div>
+              <div class="small">기본은 시작/끝 문제번호 방식입니다.</div>
+            </div>
+            <div class="row">
+              <label class="pill" style="cursor:pointer">
+                <input type="radio" name="probMode" value="range" checked />
+                <span class="small">시작/끝</span>
+              </label>
+              <label class="pill" style="cursor:pointer">
+                <input type="radio" name="probMode" value="manual" />
+                <span class="small">직접 입력</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="grid3" id="probRangeRow">
+            <div>
+              <div class="label">시작 문제번호</div>
+              <input class="input" id="probStart" inputmode="numeric" placeholder="예: 1" />
+            </div>
+            <div>
+              <div class="label">끝 문제번호</div>
+              <input class="input" id="probEnd" inputmode="numeric" placeholder="예: 20" />
+            </div>
+            <div>
+              <div class="label">푼 문제수(자동)</div>
+              <input class="input" id="probSolvedAuto" disabled placeholder="-" />
+            </div>
+          </div>
+
+          <div class="grid2 hide" id="probManualRow">
+            <div>
+              <div class="label">푼 문제수(직접)</div>
+              <input class="input" id="probSolvedManual" inputmode="numeric" placeholder="예: 30" />
+            </div>
+            <div>
+              <div class="label">(참고) 시작/끝은 비활성화됩니다.</div>
+              <div class="pill"><span class="small">직접 입력 모드에서는 푼 문제수를 직접 입력해 주세요.</span></div>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="pill" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="hint">정답/오답 입력</div>
+              <div class="small">필요하시면 입력하시고, 건너뛰실 수도 있습니다.</div>
+            </div>
+            <label class="switch" title="정답/오답 입력을 건너뜁니다.">
+              <input id="skipCwToggle" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </label>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="grid2" id="cwRow">
+            <div>
+              <div class="label">정답 개수</div>
+              <input class="input" id="correctCnt" inputmode="numeric" placeholder="예: 25" />
+            </div>
+            <div>
+              <div class="label">오답 개수</div>
+              <input class="input" id="wrongCnt" inputmode="numeric" placeholder="예: 5" />
+            </div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="row" style="justify-content:center">
+          <button class="btn primary" id="startBtn">시작</button>
+          <button class="btn" id="pauseBtn">일시정지</button>
+          <button class="btn" id="resumeBtn">재개</button>
+          <button class="btn primary" id="stopBtn">종료</button>
+          <button class="btn" id="resetBtn">초기화</button>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="kpi">
+          <div class="k"><div class="t">오늘 누적</div><div class="v" id="todayTotal">00:00:00</div></div>
+          <div class="k"><div class="t">이번 세션 시작</div><div class="v" id="sessionStart">-</div></div>
+          <div class="k"><div class="t">이번 세션 종료</div><div class="v" id="sessionEnd">-</div></div>
+        </div>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>기록</h2>
+          <div class="row">
+            <button class="btn" id="clearTodayBtn">오늘 기록만 초기화</button>
+            <button class="btn danger" id="clearAllBtn">전체 초기화</button>
+          </div>
+        </div>
+        <div class="small">기록 목록에서 <b>상세보기</b>를 누르시면 시작/종료 시각(초 단위)과 측정 결과를 자세히 확인하실 수 있습니다.</div>
+        <div style="height:10px"></div>
+        <div class="list" id="recordList"></div>
+      </div>
+    </main>
+
+    <aside class="side" id="side">
+      <div class="card">
+        <div class="sideheader">
+          <div>
+            <div style="font-weight:900">캘린더</div>
+            <div class="small">기록(초록) / 예약(노랑)</div>
+          </div>
+          <button class="btn" id="collapseCalBtn">접기</button>
+        </div>
+        <div class="row" style="justify-content:space-between; margin-top:10px">
+          <button class="btn" id="prevMonth">이전</button>
+          <div style="font-weight:900" id="monthLabel">-</div>
+          <button class="btn" id="nextMonth">다음</button>
+        </div>
+        <div class="cal" id="calGrid"></div>
+        <div class="divider"></div>
+        <div class="section-title"><h2 style="font-size:14px">선택한 날짜</h2><span class="hint" id="selectedDate">-</span></div>
+        <div class="list" id="dayRecords"></div>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>통계</h2>
+          <div class="row">
+            <button class="btn" data-stat="day">일간</button>
+            <button class="btn" data-stat="week">주간</button>
+            <button class="btn" data-stat="month">월간</button>
+            <button class="btn" data-stat="year">연간</button>
+          </div>
+        </div>
+        <div class="kpi" id="statsKpi"></div>
+        <div style="height:8px"></div>
+        <div class="small" id="statsHint">원하시는 기간 버튼을 눌러 통계를 확인해 주세요.</div>
+      </div>
+    </aside>
+
+    <aside class="side side-collapsed card hide" id="sideCollapsed">
+      <div class="sideheader">
+        <div>
+          <div style="font-weight:900">캘린더</div>
+          <div class="small">접힌 상태입니다.</div>
+        </div>
+        <button class="btn" id="expandCalBtn">펼치기</button>
+      </div>
+      <div class="small" style="margin-top:8px">캘린더를 펼치시면 기록/예약 표시를 확인하실 수 있습니다.</div>
+    </aside>
+
+  </div>
+
+  <!-- Modal: Record detail -->
+  <div class="modalback" id="detailBack">
+    <div class="modal">
+      <button class="btn close" id="detailClose">닫기</button>
+      <h3>기록 상세보기</h3>
+      <div id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Workbook manage -->
+  <div class="modalback" id="wbBack">
+    <div class="modal">
+      <button class="btn close" id="wbClose">닫기</button>
+      <h3>문제집 등록/관리</h3>
+      <div class="small">문제집을 등록하시면 페이지/문제 입력값을 검증하고 통계에 활용할 수 있습니다.</div>
+      <div class="divider"></div>
+      <div class="grid3">
+        <div>
+          <div class="label">문제집 제목</div>
+          <input class="input" id="wbTitle" placeholder="예: 개념원리 수학" />
+        </div>
+        <div>
+          <div class="label">전체 문제수</div>
+          <input class="input" id="wbTotalProblems" inputmode="numeric" placeholder="예: 500" />
+        </div>
+        <div>
+          <div class="label">전체 페이지수</div>
+          <input class="input" id="wbTotalPages" inputmode="numeric" placeholder="예: 320" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <button class="btn primary" id="wbAddBtn">추가</button>
+        <button class="btn" id="wbUpdateBtn">선택 항목 변경</button>
+        <button class="btn danger" id="wbDeleteBtn">선택 항목 삭제</button>
+      </div>
+      <div class="divider"></div>
+      <div class="label">등록된 문제집</div>
+      <select id="wbList" size="8" class="input"></select>
+      <div class="small" style="margin-top:8px">항목을 선택하신 뒤 변경/삭제를 진행해 주세요.</div>
+    </div>
+  </div>
+
+  <!-- Modal: Palette manage -->
+  <div class="modalback" id="palBack">
+    <div class="modal">
+      <button class="btn close" id="palClose">닫기</button>
+      <h3>색상 테마(팔레트) 추가/변경/삭제</h3>
+      <div class="small">원하시는 색으로 바꾸실 수 있습니다. 선택 후 변경하거나 새로 추가하실 수 있습니다.</div>
+      <div class="divider"></div>
+
+      <div class="label">팔레트 선택</div>
+      <select id="palList" size="6" class="input"></select>
+      <div style="height:10px"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="label">팔레트 이름</div>
+          <input class="input" id="palName" placeholder="예: 블루 라이트" />
+        </div>
+        <div>
+          <div class="label">강조색(Accent)</div>
+          <input class="input" id="palAccent" type="color" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid3">
+        <div>
+          <div class="label">배경</div>
+          <input class="input" id="palBg" type="color" />
+        </div>
+        <div>
+          <div class="label">카드</div>
+          <input class="input" id="palCard" type="color" />
+        </div>
+        <div>
+          <div class="label">글자</div>
+          <input class="input" id="palText" type="color" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid3">
+        <div>
+          <div class="label">보조 글자</div>
+          <input class="input" id="palMuted" type="color" />
+        </div>
+        <div>
+          <div class="label">테두리</div>
+          <input class="input" id="palBorder" type="color" />
+        </div>
+        <div>
+          <div class="label">성공(초록)</div>
+          <input class="input" id="palSuccess" type="color" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid2">
+        <div>
+          <div class="label">경고(노랑)</div>
+          <input class="input" id="palWarning" type="color" />
+        </div>
+        <div>
+          <div class="label">위험(빨강)</div>
+          <input class="input" id="palDanger" type="color" />
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="row">
+        <button class="btn primary" id="palAddBtn">새로 추가</button>
+        <button class="btn" id="palUpdateBtn">선택 항목 변경</button>
+        <button class="btn danger" id="palDeleteBtn">선택 항목 삭제</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="small">※ 테마(라이트/다크)는 상단 스위치로 전환되며, 팔레트는 색상(Accent/배경 등)을 관리합니다.</div>
+    </div>
+  </div>
+
+  <!-- Modal: In-app message -->
+  <div class="modalback" id="msgBack">
+    <div class="modal" style="width:min(560px,100%)">
+      <button class="btn close" id="msgClose">닫기</button>
+      <h3 id="msgTitle">안내</h3>
+      <div id="msgBody" class="text"></div>
+      <div style="height:12px"></div>
+      <div class="row end">
+        <button class="btn primary" id="msgOk">확인</button>
+      </div>
+    </div>
+  </div>
+
+
+</body>
+</html>
